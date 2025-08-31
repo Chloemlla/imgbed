@@ -47,8 +47,19 @@ function Item(props: { f: TFile }) {
 export function Uploader() {
   const [drag, setDrag] = useState(false)
   const [files] = useFileStore((state) => [state.files])
+  const [current] = useApiStore((state) => [state.current])
+  const { setNotification } = useNotification()
   
   function handleAddFiles(files: FileList | File[]) {
+    // 检查当前选择的API是否为不可用的服务
+    if (current === 'Telegraph' || current === 'Upload.cc') {
+      setNotification({
+        message: `${current} 服务暂时不可用，请选择其他图床服务后再上传`,
+        type: 'error'
+      })
+      return
+    }
+    
     for (const file of files) {
       if (file.type.includes('image')) {
         useFileStore.getState().add(file)
