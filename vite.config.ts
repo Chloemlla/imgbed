@@ -67,8 +67,8 @@ function obfuscatorPlugin() {
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
-    react(),
-    obfuscatorPlugin()
+    react()
+    // obfuscatorPlugin() // Temporarily disabled for testing
   ],
   resolve: {
     alias: {
