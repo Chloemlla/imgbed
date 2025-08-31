@@ -78,7 +78,7 @@ export default defineConfig(({ mode }) => ({
   build: {
     // Enhanced build settings for maximum obfuscation
     // 使用 terser  minifier
-    minify: 'terser' as const,
+    minify: false,
     // chunk 大小警告限制
     chunkSizeWarningLimit: 1000,
     // terser 选项
