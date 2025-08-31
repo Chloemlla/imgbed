@@ -1,7 +1,5 @@
 name = "imgbed"
 compatibility_date = "2023-12-01"
-
-# Pages configuration for React app
 pages_build_output_dir = "dist"
 
 [env.production]
@@ -13,8 +11,3 @@ ENVIRONMENT = "production"
 name = "imgbed-preview"
 [env.preview.vars]
 ENVIRONMENT = "preview"
-
-# Functions configuration (for API routes if needed)
-[[pages.functions]]
-directory = "worker"
-compatibility_date = "2023-12-01"
