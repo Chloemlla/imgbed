@@ -170,65 +170,87 @@ export class AggressiveProtectionSystem {
   }
 
   private disablePageInteractions(): void {
-    // Disable all form inputs and buttons
-    const interactiveElements = document.querySelectorAll('input, button, select, textarea, a')
-    interactiveElements.forEach(element => {
-      if (element instanceof HTMLElement) {
-        element.style.pointerEvents = 'none'
-        element.style.opacity = '0.3'
-        element.setAttribute('disabled', 'true')
+    try {
+      // Disable all form inputs and buttons
+      const interactiveElements = document.querySelectorAll('input, button, select, textarea, a')
+      interactiveElements.forEach(element => {
+        try {
+          if (element instanceof HTMLElement) {
+            element.style.pointerEvents = 'none'
+            element.style.opacity = '0.3'
+            element.setAttribute('disabled', 'true')
+          }
+        } catch (e) {
+          // Ignore individual element errors
+        }
+      })
+      
+      // Disable scrolling
+      if (document.body) {
+        document.body.style.overflow = 'hidden'
       }
-    })
-    
-    // Disable scrolling
-    document.body.style.overflow = 'hidden'
-    document.documentElement.style.overflow = 'hidden'
+      if (document.documentElement) {
+        document.documentElement.style.overflow = 'hidden'
+      }
+    } catch (e) {
+      console.error('Error disabling page interactions:', e)
+    }
   }
 
   private preventRemovalAttempts(): void {
     // Monitor attempts to remove protection elements
     this.blockingObserver = new MutationObserver((mutations) => {
-      mutations.forEach(mutation => {
-        if (mutation.type === 'childList') {
-          // Check if protection elements were removed
-          if (!document.getElementById('aggressive-watermark') && this.watermarkOverlay) {
-            console.error('🚨 Watermark removal detected - recreating')
-            this.createFullScreenWatermark()
-          }
-          
-          if (!document.getElementById('content-blocker') && this.contentBlocker) {
-            console.error('🚨 Content blocker removal detected - recreating')
-            this.blockAllContentRendering()
-          }
-          
-          // Remove any new content that's not our protection
-          mutation.addedNodes.forEach(node => {
-            if (node.nodeType === Node.ELEMENT_NODE) {
-              const element = node as Element
-              if (element.id !== 'aggressive-watermark' && 
-                  element.id !== 'content-blocker' &&
-                  !element.closest('#aggressive-watermark') &&
-                  !element.closest('#content-blocker')) {
-                // Remove unauthorized new content
-                element.remove()
-              }
-            }
-          })
-        }
-        
-        // Prevent style modifications to protection elements
-        if (mutation.type === 'attributes' && mutation.target instanceof Element) {
-          const target = mutation.target
-          if (target.id === 'aggressive-watermark' || target.id === 'content-blocker') {
-            // Restore protection element styles if modified
-            if (target.id === 'aggressive-watermark' && this.watermarkOverlay) {
+      try {
+        mutations.forEach(mutation => {
+          if (mutation.type === 'childList') {
+            // Check if protection elements were removed
+            if (!document.getElementById('aggressive-watermark') && this.watermarkOverlay) {
+              console.error('🚨 Watermark removal detected - recreating')
               this.createFullScreenWatermark()
-            } else if (target.id === 'content-blocker' && this.contentBlocker) {
+            }
+            
+            if (!document.getElementById('content-blocker') && this.contentBlocker) {
+              console.error('🚨 Content blocker removal detected - recreating')
               this.blockAllContentRendering()
             }
+            
+            // Remove any new content that's not our protection
+            if (mutation.addedNodes) {
+              mutation.addedNodes.forEach(node => {
+                try {
+                  if (node && node.nodeType === Node.ELEMENT_NODE) {
+                    const element = node as Element
+                    if (element && element.id !== 'aggressive-watermark' && 
+                        element.id !== 'content-blocker' &&
+                        !element.closest('#aggressive-watermark') &&
+                        !element.closest('#content-blocker')) {
+                      // Remove unauthorized new content
+                      element.remove()
+                    }
+                  }
+                } catch (e) {
+                  // Ignore errors during node processing
+                }
+              })
+            }
           }
-        }
-      })
+          
+          // Prevent style modifications to protection elements
+          if (mutation.type === 'attributes' && mutation.target instanceof Element) {
+            const target = mutation.target
+            if (target && (target.id === 'aggressive-watermark' || target.id === 'content-blocker')) {
+              // Restore protection element styles if modified
+              if (target.id === 'aggressive-watermark' && this.watermarkOverlay) {
+                this.createFullScreenWatermark()
+              } else if (target.id === 'content-blocker' && this.contentBlocker) {
+                this.blockAllContentRendering()
+              }
+            }
+          }
+        })
+      } catch (e) {
+        console.error('Protection system error:', e)
+      }
     })
     
     this.blockingObserver.observe(document.documentElement, {
