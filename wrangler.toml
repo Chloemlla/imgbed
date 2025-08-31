@@ -6,18 +6,13 @@ pages_build_output_dir = "dist"
 
 [env.production]
 name = "imgbed-production"
-
-[env.staging]
-name = "imgbed-staging"
-
-# Build configuration for React app
-[build]
-command = "npm run build"
-cwd = "./"
-
-# Variables (you can set these in Cloudflare dashboard or via wrangler secret)
-[vars]
+[env.production.vars]
 ENVIRONMENT = "production"
+
+[env.preview]
+name = "imgbed-preview"
+[env.preview.vars]
+ENVIRONMENT = "preview"
 
 # Functions configuration (for API routes if needed)
 [[pages.functions]]
