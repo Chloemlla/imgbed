@@ -18,8 +18,7 @@ function obfuscatorPlugin() {
             controlFlowFlattening: true,
             // Reduced obfuscation for size optimization
             deadCodeInjection: false,
-            debugProtection: true,
-            debugProtectionInterval: false,
+            debugProtection: false,
             disableConsoleOutput: true,
             identifierNamesGenerator: 'hexadecimal',
             log: false,
