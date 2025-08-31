@@ -82,14 +82,27 @@ export default defineConfig(({ mode }) => ({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/tgimg/, ''),
         configure: (proxy, _options) => {
-          proxy.on('error', (err, _req, _res) => {
-            console.log('proxy error', err);
-          });
           proxy.on('proxyReq', (proxyReq, req, _res) => {
-            console.log('Sending Request to the Target:', req.method, req.url);
+            // Override headers to mimic Telegraph origin
+            proxyReq.setHeader('Origin', 'https://telegra.ph');
+            proxyReq.setHeader('Referer', 'https://telegra.ph/');
+            proxyReq.setHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+            // Remove the actual origin header
+            proxyReq.removeHeader('host');
           });
-          proxy.on('proxyRes', (proxyRes, req, _res) => {
-            console.log('Received Response from the Target:', proxyRes.statusCode, req.url);
+        },
+      },
+      '/api/uploadcc': {
+        target: 'https://upload.cc',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/uploadcc/, ''),
+        configure: (proxy, _options) => {
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
+            // Override headers to mimic legitimate browser request
+            proxyReq.setHeader('Origin', 'https://upload.cc');
+            proxyReq.setHeader('Referer', 'https://upload.cc/');
+            proxyReq.setHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+            proxyReq.removeHeader('host');
           });
         },
       }

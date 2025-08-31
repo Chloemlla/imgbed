@@ -2,8 +2,8 @@ import { Api } from '@/types'
 
 const api: Api = {
   name: 'Upload.cc',
-  transit: true,
-  url: 'https://upload.cc/image_upload',
+  transit: false,
+  url: '/api/uploadcc/image_upload',
   field_name: 'uploaded_file[]',
   resp_type: 'json',
   url_field: ['success_image', 0, 'url'],
@@ -11,6 +11,9 @@ const api: Api = {
   success_code: 100,
   max_size: 0,
   extensions: [],
+  headers: {
+    'Accept': 'application/json, text/plain, */*'
+  },
   final_handler: (text: string): string => {
     return `https://upload.cc/${text}`
   },

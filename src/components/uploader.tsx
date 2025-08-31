@@ -1,6 +1,8 @@
 import { TFile, useFileStore } from '@/store/file'
+import { useApiStore } from '@/store/api'
 import { Card, CardBody, Progress } from '@nextui-org/react'
 import { useEffect, useRef, useState } from 'react'
+import { useNotification } from './Notification'
 import clsx from 'clsx'
 
 function Item(props: { f: TFile }) {

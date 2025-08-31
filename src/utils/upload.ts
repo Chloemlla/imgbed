@@ -93,17 +93,31 @@ export const upload = async (
       })
       xhr.addEventListener('load', () => {
         progress(100)
-        let res = ''
-        switch (api.resp_type) {
-          case 'json': {
-            res = JSON.parse(xhr.responseText)
-            break
-          }
-          case 'text': {
-            res = xhr.responseText
-          }
+        console.log('Response status:', xhr.status)
+        console.log('Response text:', xhr.responseText)
+        
+        if (xhr.status !== 200) {
+          resolve({ url: '', err: `HTTP ${xhr.status}: ${xhr.statusText}` })
+          return
         }
-        resolve(handleRes(api, res))
+        
+        let res = ''
+        try {
+          switch (api.resp_type) {
+            case 'json': {
+              res = JSON.parse(xhr.responseText)
+              break
+            }
+            case 'text': {
+              res = xhr.responseText
+            }
+          }
+          resolve(handleRes(api, res))
+        } catch (e) {
+          console.error('Failed to parse response:', e)
+          console.error('Raw response:', xhr.responseText)
+          resolve({ url: '', err: 'Invalid response format' })
+        }
       })
       xhr.addEventListener('loadend', (evt) => {
         // progress(100)

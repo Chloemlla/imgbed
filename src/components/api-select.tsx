@@ -25,8 +25,15 @@ export function ApiSelect() {
                   // 当选择 Telegraph 时显示不可用提示
                   if (api.name === 'Telegraph') {
                     setNotification({
-                      message: 'Telegraph 服务在国内速度较慢，如有需要请选择搜狐源',
-                      type: 'info'
+                      message: 'Telegraph 服务暂时不可用，建议选择其他图床服务',
+                      type: 'warning'
+                    })
+                  }
+                  // 当选择 Upload.cc 时显示不可用提示
+                  if (api.name === 'Upload.cc') {
+                    setNotification({
+                      message: 'Upload.cc 服务暂时不可用，建议选择其他图床服务',
+                      type: 'warning'
                     })
                   }
                   // 当选择 ImgBB 时显示连通性警告
