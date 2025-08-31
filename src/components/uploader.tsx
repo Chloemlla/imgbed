@@ -45,6 +45,7 @@ function Item(props: { f: TFile }) {
 export function Uploader() {
   const [drag, setDrag] = useState(false)
   const [files] = useFileStore((state) => [state.files])
+  
   function handleAddFiles(files: FileList | File[]) {
     for (const file of files) {
       if (file.type.includes('image')) {
