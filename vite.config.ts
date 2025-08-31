@@ -75,61 +75,14 @@ export default defineConfig(({ mode }) => ({
     }
   },
   build: {
-    // Enhanced build settings for maximum obfuscation
-    minify: 'terser',
+    minify: false,
     chunkSizeWarningLimit: 1000,
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true,
-        pure_funcs: ['console.log', 'console.info', 'console.warn'],
-        dead_code: true,
-        unused: true,
-        passes: 3,
-        unsafe: true,
-        unsafe_comps: true,
-        unsafe_Function: true,
-        unsafe_math: true,
-        unsafe_symbols: true,
-        unsafe_methods: true,
-        unsafe_proto: true,
-        unsafe_regexp: true,
-        unsafe_undefined: true
-      },
-      mangle: {
-        toplevel: true,
-        eval: true,
-        properties: {
-          regex: /^_|^[A-Z]/
-        }
-      },
-      format: {
-        comments: false,
-        beautify: false
-      }
-    },
     rollupOptions: {
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
           ui: ['@nextui-org/react'],
           utils: ['./src/utils/linkIntegrity.ts', './src/utils/aggressiveProtection.ts']
-        },
-        // Randomized file names for additional obfuscation
-        chunkFileNames: () => {
-          const hash1 = Math.random().toString(36).substring(2, 10)
-          const hash2 = Math.random().toString(36).substring(2, 8)
-          return `assets/${hash1}-${hash2}.[hash].js`
-        },
-        entryFileNames: () => {
-          const hash1 = Math.random().toString(36).substring(2, 10)
-          const hash2 = Math.random().toString(36).substring(2, 8)
-          return `assets/${hash1}-${hash2}.[hash].js`
-        },
-        assetFileNames: () => {
-          const hash1 = Math.random().toString(36).substring(2, 10)
-          const hash2 = Math.random().toString(36).substring(2, 8)
-          return `assets/${hash1}-${hash2}.[hash].[ext]`
         }
       }
     }
