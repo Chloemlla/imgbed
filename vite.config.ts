@@ -13,34 +13,48 @@ function obfuscatorPlugin() {
         if (chunk.type === 'chunk' && fileName.endsWith('.js')) {
           // Apply maximum obfuscation with dead code injection
           const obfuscationResult = JavaScriptObfuscator.obfuscate(chunk.code, {
-            compact: true, // 压缩输出体积，去除多余空白与换行
-            controlFlowFlattening: false, // 关闭控制流扁平化（性能开销大，影响运行速度）
-            deadCodeInjection: false, // 不注入死代码（避免包体积大幅增长）
-            debugProtection: true, // 阻止使用 DevTools 调试（检测 debugger 等）
-            debugProtectionInterval: 2000, // 调试防护轮询间隔（毫秒），与 debugProtection 配合
-            disableConsoleOutput: true, // 移除/替换 console 输出，降低信息泄露
-            identifierNamesGenerator: 'hexadecimal', // 标识符改写为十六进制格式
-            log: false, // 关闭混淆器自身日志
-            numbersToExpressions: true, // 将字面量数字替换为等价表达式，增加阅读难度
-            renameGlobals: false, // 不重命名全局变量，避免与外部环境冲突
-            selfDefending: true, // 自我防护：防止格式化/美化与运行时篡改
-            simplify: true, // 启用语义保持的简化变换，提升混淆一致性
-            splitStrings: true, // 拆分长字符串为片段
-            splitStringsChunkLength: 10, // 字符串拆分片段长度
-            stringArray: true, // 启用字符串抽离到数组
-            stringArrayCallsTransform: true, // 将直接字符串访问改为通过函数访问
-            stringArrayCallsTransformThreshold: 0.75, // 上述转换应用的概率阈值
-            stringArrayEncoding: ['base64'], // 字符串数组编码方式（base64）
-            stringArrayIndexShift: true, // 访问字符串数组时启用索引偏移
-            stringArrayRotate: true, // 旋转字符串数组元素顺序
-            stringArrayShuffle: true, // 打乱字符串数组顺序
-            stringArrayWrappersCount: 2, // 生成多层包装器数量（增加还原成本）
-            stringArrayWrappersChainedCalls: true, // 包装器链式调用，进一步混淆
-            stringArrayWrappersParametersMaxCount: 4, // 包装器的最大参数个数
-            stringArrayWrappersType: 'function', // 包装器实现类型
-            stringArrayThreshold: 0.75, // 抽离到字符串数组的概率阈值
-            transformObjectKeys: true, // 混淆对象字面量的键名
-            unicodeEscapeSequence: true // 使用 Unicode 转义输出字符串
+            compact: true,
+            controlFlowFlattening: false,
+            deadCodeInjection: false,
+            debugProtection: false, // 禁用调试保护避免运行时错误
+            disableConsoleOutput: true,
+            identifierNamesGenerator: 'hexadecimal',
+            log: false,
+            numbersToExpressions: false, // 禁用数字表达式转换
+            renameGlobals: false,
+            selfDefending: false, // 禁用自我防护避免运行时冲突
+            simplify: true,
+            splitStrings: false, // 禁用字符串拆分
+            stringArray: true,
+            stringArrayCallsTransform: false, // 禁用字符串调用转换
+            stringArrayEncoding: ['base64'],
+            stringArrayIndexShift: false, // 禁用索引偏移
+            stringArrayRotate: false, // 禁用数组旋转
+            stringArrayShuffle: false, // 禁用数组打乱
+            stringArrayWrappersCount: 1, // 减少包装器数量
+            stringArrayWrappersChainedCalls: false, // 禁用链式调用
+            stringArrayWrappersParametersMaxCount: 2,
+            stringArrayWrappersType: 'variable',
+            stringArrayThreshold: 0.3, // 降低字符串数组阈值
+            transformObjectKeys: false, // 禁用对象键转换避免React属性问题
+            unicodeEscapeSequence: false, // 禁用Unicode转义
+            // 保护关键标识符
+            reservedNames: [
+              '^React',
+              '^ReactDOM',
+              '^__vite',
+              '^import',
+              '^export',
+              '^useState',
+              '^useEffect',
+              '^useRef',
+              '^useCallback',
+              '^useMemo',
+              'props',
+              'children',
+              'key',
+              'ref'
+            ]
           });
 
           chunk.code = obfuscationResult.getObfuscatedCode()
