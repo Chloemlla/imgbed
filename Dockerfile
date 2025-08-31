@@ -5,7 +5,7 @@ FROM node:22-alpine
 WORKDIR /app
 
 # Set Node.js memory limits
-ENV NODE_OPTIONS="--max-old-space-size=4096"
+ENV NODE_OPTIONS="--max-old-space-size=13096"
 ENV NPM_CONFIG_CACHE=/tmp/.npm
 
 # Copy package files
@@ -19,7 +19,7 @@ RUN npm install -g pnpm@latest && \
 COPY . .
 
 # Build the application
-RUN pnpm build
+RUN pnpm build:obfuscated
 
 # Create non-root user
 RUN addgroup -g 1001 -S appuser && \

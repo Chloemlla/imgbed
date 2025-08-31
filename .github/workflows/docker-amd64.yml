@@ -28,7 +28,7 @@ jobs:
 
       - name: Set Node.js memory limits
         run: |
-          echo "NODE_OPTIONS=--max-old-space-size=5096" >> $GITHUB_ENV
+          echo "NODE_OPTIONS=--max-old-space-size=13096" >> $GITHUB_ENV
           echo "NPM_CONFIG_CACHE=/tmp/.npm" >> $GITHUB_ENV
 
       - name: Set up QEMU

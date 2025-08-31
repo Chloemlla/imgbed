@@ -1,6 +1,8 @@
-import { Button, Switch, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Link } from '@nextui-org/react'
-import { SunIcon, MoonIcon, Github } from '../icons'
-import { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react'
+import { Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Link } from '@nextui-org/react'
+import { Switch } from '@nextui-org/react'
+import { PROTECTED_LINKS } from '../utils/linkIntegrity'
+import { useSecurityMonitor } from '../hooks/useSecurityMonitor'
 
 export function Header() {
   const [theme, setTheme] = useState(() => {
@@ -12,6 +14,9 @@ export function Header() {
   })
   const { isOpen, onOpen, onOpenChange } = useDisclosure()
   
+  // Initialize security monitoring
+  useSecurityMonitor()
+
   useEffect(() => {
     if (theme === 'dark') {
       document.documentElement.classList.add('dark')
@@ -32,48 +37,129 @@ export function Header() {
           defaultSelected
           size="md"
           color="primary"
-          thumbIcon={({ isSelected, className }) =>
+          thumbIcon={({ isSelected, className }: { isSelected: boolean; className: string }) =>
             isSelected ? (
-              <SunIcon className={className} />
+              <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="4"/>
+                <path d="m12 2 3 10h-6l3-10z"/>
+                <path d="m12 22-3-10h6l-3 10z"/>
+                <path d="m20 12-10-3v6l10-3z"/>
+                <path d="m4 12 10 3v-6l-10 3z"/>
+              </svg>
             ) : (
-              <MoonIcon className={className} />
+              <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+              </svg>
             )
           }
           isSelected={theme === 'light'}
-          onValueChange={(v) => {
+          onValueChange={(v: boolean) => {
             setTheme(v ? 'light' : 'dark')
           }}
         ></Switch>
       </div>
-      
-      <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
+
+      <Modal 
+        isOpen={isOpen} 
+        onOpenChange={onOpenChange}
+        size="2xl"
+        scrollBehavior="inside"
+        classNames={{
+          base: "mx-2 my-2 sm:mx-6 sm:my-16",
+          wrapper: "w-full",
+          body: "py-6"
+        }}
+      >
         <ModalContent>
-          {(onClose) => (
+          {(onClose: () => void) => (
             <>
-              <ModalHeader className="flex flex-col gap-1">关于本项目</ModalHeader>
-              <ModalBody>
-                <div className="space-y-3">
-                  <p>本项目开源自：</p>
-                  <Link 
-                    href="https://github.com/devhappys/imgbed" 
-                    isExternal
-                    showAnchorIcon
-                    className="block"
-                  >
-                    https://github.com/devhappys/imgbed
-                  </Link>
-                  <p>基于以下项目更改：</p>
-                  <Link 
-                    href="https://github.com/xhofe/imgbed" 
-                    isExternal
-                    showAnchorIcon
-                    className="block"
-                  >
-                    https://github.com/xhofe/imgbed
-                  </Link>
-                  <p className="text-sm text-gray-600">
-                    感谢原作者的贡献，本项目在原基础上进行了功能修复、功能优化和用户体验改进。
-                  </p>
+              <ModalHeader className="flex flex-col gap-1 px-4 sm:px-6">关于本项目</ModalHeader>
+              <ModalBody className="px-4 sm:px-6 max-h-[70vh] overflow-y-auto">
+                <div className="space-y-4 sm:space-y-6">
+                  <div>
+                    <p className="font-semibold mb-2 text-base sm:text-lg">项目信息</p>
+                    <p className="text-sm sm:text-base mb-2">本项目开源自：</p>
+                    <Link
+                      href={PROTECTED_LINKS[0].url}
+                      isExternal
+                      showAnchorIcon
+                      className="block text-sm sm:text-base break-all"
+                      data-integrity-hash={PROTECTED_LINKS[0].hash}
+                    >
+                      {PROTECTED_LINKS[0].text}
+                    </Link>
+                  </div>
+
+                  <div>
+                    <p className="font-semibold mb-2 text-base sm:text-lg">基于项目</p>
+                    <p className="text-sm sm:text-base mb-2">基于以下项目更改：</p>
+                    <Link
+                      href={PROTECTED_LINKS[1].url}
+                      isExternal
+                      showAnchorIcon
+                      className="block text-sm sm:text-base break-all"
+                      data-integrity-hash={PROTECTED_LINKS[1].hash}
+                    >
+                      {PROTECTED_LINKS[1].text}
+                    </Link>
+                  </div>
+
+                  <div>
+                    <p className="font-semibold mb-2 text-base sm:text-lg">开源协议</p>
+                    <p className="text-xs sm:text-sm text-gray-600 mb-2">
+                      本项目不同于原开源项目，因为原开源项目没有开源协议。
+                    </p>
+                    <p className="text-xs sm:text-sm">
+                      本项目使用 <Link
+                        href={PROTECTED_LINKS[2].url}
+                        isExternal
+                        showAnchorIcon
+                        className="font-mono text-blue-600 text-xs sm:text-sm"
+                        data-integrity-hash={PROTECTED_LINKS[2].hash}
+                      >
+                        {PROTECTED_LINKS[2].text}
+                      </Link> 作为开源协议。
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="font-semibold mb-2 text-base sm:text-lg">项目改进</p>
+                    <div className="text-xs sm:text-sm text-gray-600 space-y-3">
+                      <div>
+                        <p className="font-medium text-gray-800 text-sm sm:text-base">功能修复：</p>
+                        <ul className="list-disc list-inside space-y-1 ml-2 mt-1">
+                          <li>修复了 useEffect 缺少依赖数组导致的内存泄漏</li>
+                          <li>修复了重复选择同一API仍显示通知的问题</li>
+                          <li>修复了主题初始化可能导致的闪烁问题</li>
+                          <li>修复了空文件复制和重试验证问题</li>
+                        </ul>
+                      </div>
+
+                      <div>
+                        <p className="font-medium text-gray-800 text-sm sm:text-base">功能优化：</p>
+                        <ul className="list-disc list-inside space-y-1 ml-2 mt-1">
+                          <li>统一通知系统，替换 react-hot-toast 为自定义组件</li>
+                          <li>添加文件选择器图片类型限制</li>
+                          <li>改进按钮状态管理和用户反馈</li>
+                          <li>更新 Telegraph API 配置和端点</li>
+                        </ul>
+                      </div>
+
+                      <div>
+                        <p className="font-medium text-gray-800 text-sm sm:text-base">用户体验改进：</p>
+                        <ul className="list-disc list-inside space-y-1 ml-2 mt-1">
+                          <li>添加 ImgBB 和 Telegraph 服务连通性提示</li>
+                          <li>改进进度条可访问性（aria-label）</li>
+                          <li>优化空操作时的提示信息</li>
+                          <li>添加 Wrangler 部署支持和完整文档</li>
+                        </ul>
+                      </div>
+
+                      <p className="text-xs text-gray-500 pt-2 border-t border-gray-200">
+                        以上为本作者的贡献，这些改进让应用更加稳定和易用。
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </ModalBody>
               <ModalFooter>
