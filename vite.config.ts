@@ -67,7 +67,8 @@ function obfuscatorPlugin() {
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   plugins: [
-    react()
+    react(),
+    ...(mode === 'production' ? [obfuscatorPlugin()] : [])
   ],
   resolve: {
     alias: {
@@ -75,8 +76,44 @@ export default defineConfig(({ mode }) => ({
     }
   },
   build: {
-    minify: false,
+    // Enhanced build settings for maximum obfuscation
+    // 使用 terser  minifier
+    minify: 'terser' as const,
+    // chunk 大小警告限制
     chunkSizeWarningLimit: 1000,
+    // terser 选项
+    terserOptions: {
+      // 压缩选项
+      compress: {
+        // 删除 console 语句
+        drop_console: true,
+        // 删除 debugger 语句
+        drop_debugger: true,
+        // 删除指定函数调用
+        pure_funcs: ['console.log', 'console.info', 'console.warn'],
+        // 删除死代码
+        dead_code: true
+      },
+      //混淆选项
+      mangle: {
+        // 该选项控制是否混淆所有的标识符
+        toplevel: true,
+        // 该选项控制是否混淆 eval 语句中的标识符
+        eval: true,
+        // 该选项控制是否混淆对象的属性
+        properties: {
+          // 该选项控制混淆的正则表达式
+          regex: /^_|^[A-Z]/
+        }
+      },
+      // 格式化选项
+      format: {
+        // 该选项控制是否生成注释
+        comments: false,
+        // 该选项控制是否美化代码
+        beautify: false
+      }
+    },
     rollupOptions: {
       output: {
         manualChunks: {
