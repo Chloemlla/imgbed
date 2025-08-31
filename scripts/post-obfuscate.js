@@ -48,7 +48,6 @@ const obfuscationConfig = {
   unicodeEscapeSequence: true,
   // Enhanced security
   deadCodeInjectionRandomGenerator: true,
-  debugProtectionInterval: true,
   stringArrayIndexesType: ['hexadecimal-number'],
   // Preserve React essentials
   reservedNames: [
