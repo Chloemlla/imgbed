@@ -12,7 +12,7 @@ import {
 } from '@nextui-org/react'
 import clsx from 'clsx'
 import { ComponentProps } from 'react'
-import { toast } from 'react-hot-toast'
+import { useNotification } from './Notification'
 
 enum UrlShowType {
   URL = 'Url',
@@ -38,6 +38,7 @@ const getUrlShow = (f: TFile, type: UrlShowType) => {
 }
 function Result(props: { f: TFile; type: UrlShowType }) {
   const { f } = props
+  const { setNotification } = useNotification()
   let color = 'primary' as ComponentProps<typeof Code>['color']
   let text = ''
   switch (f.status) {
@@ -104,7 +105,10 @@ function Result(props: { f: TFile; type: UrlShowType }) {
             variant="flat"
             onPress={() => {
               copyToClip(text)
-              toast.success('复制成功')
+              setNotification({
+                message: '复制成功',
+                type: 'success'
+              })
             }}
             size="sm"
           >
@@ -137,6 +141,7 @@ function Result(props: { f: TFile; type: UrlShowType }) {
 }
 export function Results() {
   const [files] = useFileStore((state) => [state.files])
+  const { setNotification } = useNotification()
   return (
     <Card>
       <CardBody>
@@ -168,11 +173,22 @@ export function Results() {
                   isIconOnly
                   color="secondary"
                   variant="shadow"
+                  isDisabled={!files.some((f) => f.status === 'error')}
                   onPress={() => {
-                    files.forEach((f) => {
-                      if (f.status === 'error') {
-                        useFileStore.getState().retry(f.id)
-                      }
+                    const errorFiles = files.filter((f) => f.status === 'error')
+                    if (errorFiles.length === 0) {
+                      setNotification({
+                        message: '没有失败的文件需要重试',
+                        type: 'error'
+                      })
+                      return
+                    }
+                    errorFiles.forEach((f) => {
+                      useFileStore.getState().retry(f.id)
+                    })
+                    setNotification({
+                      message: `正在重试 ${errorFiles.length} 个文件`,
+                      type: 'success'
                     })
                   }}
                 >
@@ -183,13 +199,23 @@ export function Results() {
                   color="primary"
                   variant="shadow"
                   onPress={() => {
+                    const uploadedFiles = files.filter((f) => f.status === 'uploaded')
+                    if (uploadedFiles.length === 0) {
+                      setNotification({
+                        message: '没有可复制的文件',
+                        type: 'error'
+                      })
+                      return
+                    }
                     copyToClip(
-                      files
-                        .filter((f) => f.status === 'uploaded')
+                      uploadedFiles
                         .map((f) => getUrlShow(f, type))
                         .join('\n'),
                     )
-                    toast.success('复制成功')
+                    setNotification({
+                      message: '复制成功',
+                      type: 'success'
+                    })
                   }}
                 >
                   <Copy fontSize={24} />

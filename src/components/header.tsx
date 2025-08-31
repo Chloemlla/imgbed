@@ -3,7 +3,14 @@ import { SunIcon, MoonIcon, Github } from '../icons'
 import { useEffect, useState } from 'react'
 
 export function Header() {
-  const [theme, setTheme] = useState(localStorage.getItem('theme') ?? 'light')
+  const [theme, setTheme] = useState(() => {
+    // 防止服务端渲染时的主题闪烁
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('theme') ?? 'light'
+    }
+    return 'light'
+  })
+  
   useEffect(() => {
     if (theme === 'dark') {
       document.documentElement.classList.add('dark')
@@ -33,9 +40,6 @@ export function Header() {
             setTheme(v ? 'light' : 'dark')
           }}
         ></Switch>
-        <a href="https://github.com/xhofe/imgbed" target="_blank">
-          <Github className="text-[26px] text-primary-500" />
-        </a>
       </div>
     </div>
   )

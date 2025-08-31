@@ -1,11 +1,14 @@
 import { apis, useApiStore } from '@/store/api'
 import { Card, CardBody, Radio, RadioGroup } from '@nextui-org/react'
+import { useNotification } from './Notification'
 
 export function ApiSelect() {
   const [current, setCurrent] = useApiStore((state) => [
     state.current,
     state.setCurrent,
   ])
+  const { setNotification } = useNotification()
+
   return (
     <div>
       <Card>
@@ -16,7 +19,24 @@ export function ApiSelect() {
             onValueChange={(v) => {
               const api = apis.find((item) => item.name === v)
               if (api) {
-                setCurrent(api.name)
+                // 只有当选择的API与当前不同时才显示通知
+                if (api.name !== current) {
+                  setCurrent(api.name)
+                  // 当选择 Telegraph 时显示不可用提示
+                  if (api.name === 'Telegraph') {
+                    setNotification({
+                      message: 'Telegraph 服务在国内速度较慢，如有需要请选择搜狐源',
+                      type: 'info'
+                    })
+                  }
+                  // 当选择 ImgBB 时显示连通性警告
+                  if (api.name === 'ImgBB') {
+                    setNotification({
+                      message: 'ImgBB主要节点在加利福尼亚州和佛罗里达州，大陆连通性较差，谨慎使用',
+                      type: 'warning'
+                    })
+                  }
+                }
               }
             }}
           >

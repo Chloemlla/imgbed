@@ -61,7 +61,7 @@ export function Uploader() {
     return () => {
       document.removeEventListener('paste', pasteListener)
     }
-  })
+  }, [])
   return (
     <Card
       className={clsx({
@@ -72,6 +72,7 @@ export function Uploader() {
         <input
           type="file"
           multiple
+          accept="image/*"
           className="hidden"
           id="upload-input"
           onChange={(e) => {

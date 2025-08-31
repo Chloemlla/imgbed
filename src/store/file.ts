@@ -1,6 +1,5 @@
 import { create } from 'zustand'
 import { nanoid } from 'nanoid'
-import { toast } from 'react-hot-toast'
 import { upload } from '@/utils/upload'
 import { useApiStore } from './api'
 import { createAsyncPool } from '@/utils/async-pool'
@@ -58,7 +57,7 @@ export const useFileStore = create<{
         status: res.err ? 'error' : 'uploaded',
         err: res.err,
       })
-      res.err && toast.error(res.err)
+      // Error notifications are now handled by the UI components
     })
   },
   retry(id) {
@@ -91,7 +90,7 @@ export const useFileStore = create<{
         status: res.err ? 'error' : 'uploaded',
         err: res.err,
       })
-      res.err && toast.error(res.err)
+      // Error notifications are now handled by the UI components
     })
   },
   del(id) {

@@ -1,0 +1,25 @@
+name = "imgbed"
+compatibility_date = "2023-12-01"
+
+# Pages configuration for React app
+pages_build_output_dir = "dist"
+
+[env.production]
+name = "imgbed-production"
+
+[env.staging]
+name = "imgbed-staging"
+
+# Build configuration for React app
+[build]
+command = "npm run build"
+cwd = "./"
+
+# Variables (you can set these in Cloudflare dashboard or via wrangler secret)
+[vars]
+ENVIRONMENT = "production"
+
+# Functions configuration (for API routes if needed)
+[[pages.functions]]
+directory = "worker"
+compatibility_date = "2023-12-01"
