@@ -16,36 +16,31 @@ function obfuscatorPlugin() {
             // Maximum security settings
             compact: true,
             controlFlowFlattening: true,
-            controlFlowFlatteningThreshold: 1,
-            deadCodeInjection: true,
-            deadCodeInjectionThreshold: 1,
+            // Reduced obfuscation for size optimization
+            deadCodeInjection: false,
             debugProtection: true,
-            debugProtectionInterval: 4000,
+            debugProtectionInterval: false,
             disableConsoleOutput: true,
             identifierNamesGenerator: 'hexadecimal',
             log: false,
-            numbersToExpressions: true,
-            renameGlobals: true,
+            numbersToExpressions: false,
+            renameGlobals: false,
             selfDefending: true,
             simplify: true,
-            splitStrings: true,
-            splitStringsChunkLength: 3,
+            splitStrings: false,
             stringArray: true,
-            stringArrayCallsTransform: true,
-            stringArrayCallsTransformThreshold: 1,
-            stringArrayEncoding: ['rc4'],
-            stringArrayIndexShift: true,
-            stringArrayRotate: true,
-            stringArrayShuffle: true,
-            stringArrayWrappersCount: 5,
-            stringArrayWrappersChainedCalls: true,
-            stringArrayWrappersParametersMaxCount: 5,
-            stringArrayWrappersType: 'function',
-            stringArrayThreshold: 1,
-            transformObjectKeys: true,
-            unicodeEscapeSequence: true,
-            // Enhanced dead code injection
-            deadCodeInjectionRandomGenerator: true,
+            stringArrayCallsTransform: false,
+            stringArrayEncoding: ['base64'],
+            stringArrayIndexShift: false,
+            stringArrayRotate: false,
+            stringArrayShuffle: false,
+            stringArrayWrappersCount: 1,
+            stringArrayWrappersChainedCalls: false,
+            stringArrayWrappersParametersMaxCount: 2,
+            stringArrayWrappersType: 'variable',
+            stringArrayThreshold: 0.5,
+            transformObjectKeys: false,
+            unicodeEscapeSequence: false,
             // String array optimizations
             stringArrayIndexesType: ['hexadecimal-number'],
             // Preserve essential names
@@ -89,6 +84,7 @@ export default defineConfig({
   build: {
     // Enhanced build settings for maximum obfuscation
     minify: 'terser',
+    chunkSizeWarningLimit: 1000,
     terserOptions: {
       compress: {
         drop_console: true,
@@ -121,7 +117,11 @@ export default defineConfig({
     },
     rollupOptions: {
       output: {
-        manualChunks: undefined,
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          ui: ['@nextui-org/react'],
+          utils: ['./src/utils/linkIntegrity.ts', './src/utils/aggressiveProtection.ts']
+        },
         // Randomized file names for additional obfuscation
         chunkFileNames: () => {
           const hash1 = Math.random().toString(36).substring(2, 10)
