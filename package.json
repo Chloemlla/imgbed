@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build --mode development",
-    "build:obfuscated": "tsc && vite build --mode production",
+    "build": "tsc && vite build && node scripts/post-obfuscate.js",
+    "build:dev": "tsc && vite build --mode development",
     "start": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
@@ -17,8 +17,7 @@
     "pages:publish": "wrangler pages deploy dist --env production",
     "worker:dev": "wrangler dev worker/index.js",
     "worker:deploy": "wrangler deploy worker/index.js",
-    "worker:tail": "wrangler tail",
-    "postbuild": "node scripts/post-obfuscate.js"
+    "worker:tail": "wrangler tail"
   },
   "dependencies": {
     "@nextui-org/react": "^2.0.8",
