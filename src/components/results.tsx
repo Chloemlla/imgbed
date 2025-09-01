@@ -134,6 +134,7 @@ function Result(props: { f: TFile; type: UrlShowType }) {
           className="absolute bottom-0 left-0 opacity-70"
           size="sm"
           value={f.progress}
+          aria-label="Upload progress"
         />
       )}
     </div>

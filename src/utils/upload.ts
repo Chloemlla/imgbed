@@ -69,6 +69,7 @@ export const upload = async (
   api: Api,
   file: File,
   progress: (text: number) => void,
+  retryCount: number = 0,
 ): Promise<Resp> => {
   const data = generateFormData(api, file)
   let url = api.url
@@ -95,6 +96,36 @@ export const upload = async (
         progress(100)
         console.log('Response status:', xhr.status)
         console.log('Response text:', xhr.responseText)
+        
+        // 检测 DDoS-Guard 保护
+        if (xhr.status === 403 && xhr.responseText.includes('DDoS-Guard')) {
+          if (retryCount < 3) {
+            console.log(`检测到DDoS-Guard保护，等待5秒后重试 (${retryCount + 1}/3)`)
+            setTimeout(() => {
+              // 递归重试上传，增加重试计数
+              upload(api, file, progress, retryCount + 1).then(resolve).catch(reject)
+            }, 5000)
+            return
+          } else {
+            console.log('DDoS-Guard重试次数已达上限，上传失败')
+            resolve({ url: '', err: 'DDoS-Guard保护：重试次数已达上限' })
+            return
+          }
+        }
+        
+        // 检测其他需要等待的情况
+        if (xhr.responseText.includes('Please wait a few seconds')) {
+          if (retryCount < 3) {
+            console.log(`检测到Please wait a few seconds. Once this check is complete, the website will open automatically等待5s重新尝试`)
+            setTimeout(() => {
+              upload(api, file, progress, retryCount + 1).then(resolve).catch(reject)
+            }, 5000)
+            return
+          } else {
+            resolve({ url: '', err: '服务器繁忙：重试次数已达上限' })
+            return
+          }
+        }
         
         if (xhr.status !== 200) {
           resolve({ url: '', err: `HTTP ${xhr.status}: ${xhr.statusText}` })
