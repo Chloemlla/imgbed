@@ -52,7 +52,7 @@ export function Uploader() {
 
   function handleAddFiles(files: FileList | File[]) {
     // 检查当前选择的API是否为不可用的服务
-    if (current === 'Telegraph') {
+    if (current === 'Telegraph' || current === 'Upload.cc') {
       setNotification({
         message: `${current} 服务暂时不可用，请选择其他图床服务后再上传`,
         type: 'error'
