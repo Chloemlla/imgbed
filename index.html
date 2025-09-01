@@ -6,6 +6,25 @@
   <link rel="icon" type="image/svg+xml"
     href="https://cy-pic.kuaizhan.com/g3/70/21/9402-6101-4229-bf5a-f79f5e304a9218?cysign=7fe0aee85ba4e6dcec6505be7e1e0a79&cyt=1756636984" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <!-- CSP 配置允许 cy-pic.kuaizhan.com 域名 -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' 'unsafe-inline' 'unsafe-eval';
+    style-src 'self' 'unsafe-inline';
+    img-src 'self' data: blob: https: http: https://cy-pic.kuaizhan.com https://*.kuaizhan.com;
+    connect-src 'self' https: http: ws: wss: https://cy-pic.kuaizhan.com https://*.kuaizhan.com https://img.xcool.workers.dev https://upload.cc https://tgimg.hapxs.com https://api.allorigins.win;
+    font-src 'self' data:;
+    object-src 'none';
+    media-src 'self' https://cy-pic.kuaizhan.com https://*.kuaizhan.com;
+    frame-src 'none';
+    base-uri 'self';
+    form-action 'self';
+  ">
+  
+  <!-- CORS 预检请求配置 -->
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  
   <title>图片上传</title>
 </head>
 
