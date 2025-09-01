@@ -11,34 +11,33 @@ function obfuscatorPlugin() {
       Object.keys(bundle).forEach(fileName => {
         const chunk = bundle[fileName]
         if (chunk.type === 'chunk' && fileName.endsWith('.js')) {
-          // Apply maximum obfuscation with dead code injection
+          // 使用更安全的混淆配置
           const obfuscationResult = JavaScriptObfuscator.obfuscate(chunk.code, {
             compact: true,
             controlFlowFlattening: false,
             deadCodeInjection: false,
-            debugProtection: false, // 禁用调试保护避免运行时错误
-            disableConsoleOutput: true,
+            debugProtection: false,
+            disableConsoleOutput: false, // 保留console输出用于调试
             identifierNamesGenerator: 'hexadecimal',
             log: false,
-            numbersToExpressions: false, // 禁用数字表达式转换
+            numbersToExpressions: false,
             renameGlobals: false,
-            selfDefending: false, // 禁用自我防护避免运行时冲突
-            simplify: true,
-            splitStrings: false, // 禁用字符串拆分
-            stringArray: true,
-            stringArrayCallsTransform: false, // 禁用字符串调用转换
-            stringArrayEncoding: ['base64'],
-            stringArrayIndexShift: false, // 禁用索引偏移
-            stringArrayRotate: false, // 禁用数组旋转
-            stringArrayShuffle: false, // 禁用数组打乱
-            stringArrayWrappersCount: 1, // 减少包装器数量
-            stringArrayWrappersChainedCalls: false, // 禁用链式调用
-            stringArrayWrappersParametersMaxCount: 2,
-            stringArrayWrappersType: 'variable',
-            stringArrayThreshold: 0.3, // 降低字符串数组阈值
-            transformObjectKeys: false, // 禁用对象键转换避免React属性问题
-            unicodeEscapeSequence: false, // 禁用Unicode转义
-            // 保护关键标识符
+            selfDefending: false,
+            simplify: false, // 禁用简化避免破坏函数结构
+            splitStrings: false,
+            stringArray: false, // 完全禁用字符串数组避免运行时错误
+            stringArrayCallsTransform: false,
+            stringArrayEncoding: [],
+            stringArrayIndexShift: false,
+            stringArrayRotate: false,
+            stringArrayShuffle: false,
+            stringArrayWrappersCount: 0,
+            stringArrayWrappersChainedCalls: false,
+            stringArrayWrappersParametersMaxCount: 0,
+            stringArrayThreshold: 0,
+            transformObjectKeys: false,
+            unicodeEscapeSequence: false,
+            // 扩展保护的标识符
             reservedNames: [
               '^React',
               '^ReactDOM',
@@ -50,10 +49,20 @@ function obfuscatorPlugin() {
               '^useRef',
               '^useCallback',
               '^useMemo',
+              '^useStore',
+              '^create',
               'props',
               'children',
               'key',
-              'ref'
+              'ref',
+              'className',
+              'onClick',
+              'onChange',
+              'onSubmit',
+              'value',
+              'defaultValue',
+              'preload',
+              'domAnimation'
             ]
           });
 
@@ -68,7 +77,8 @@ function obfuscatorPlugin() {
 export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
-    ...(mode === 'production' ? [obfuscatorPlugin()] : [])
+    // 暂时禁用混淆插件避免运行时错误
+    // ...(mode === 'production' ? [obfuscatorPlugin()] : [])
   ],
   resolve: {
     alias: {
@@ -111,7 +121,7 @@ export default defineConfig(({ mode }) => ({
   build: {
     // Enhanced build settings for maximum obfuscation
     // 使用 terser  minifier
-    minify: false,
+    minify: 'terser',
     // chunk 大小警告限制
     chunkSizeWarningLimit: 1000,
     // terser 选项
@@ -119,25 +129,20 @@ export default defineConfig(({ mode }) => ({
       // 压缩选项
       compress: {
         // 删除 console 语句
-        drop_console: true,
+        drop_console: false, // 保留console用于调试
         // 删除 debugger 语句
         drop_debugger: true,
-        // 删除指定函数调用
-        pure_funcs: ['console.log', 'console.info', 'console.warn'],
         // 删除死代码
         dead_code: true
       },
       //混淆选项
       mangle: {
         // 该选项控制是否混淆所有的标识符
-        toplevel: true,
+        toplevel: false, // 禁用顶级混淆避免破坏导入导出
         // 该选项控制是否混淆 eval 语句中的标识符
-        eval: true,
-        // 该选项控制是否混淆对象的属性
-        properties: {
-          // 该选项控制混淆的正则表达式
-          regex: /^_|^[A-Z]/
-        }
+        eval: false,
+        // 禁用属性混淆避免破坏React组件属性
+        properties: false
       },
       // 格式化选项
       format: {
