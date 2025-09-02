@@ -14,7 +14,7 @@ export function Header() {
     return 'light'
   })
   const { isOpen, onOpen, onOpenChange } = useDisclosure()
-  
+
   // Initialize security monitoring
   useSecurityMonitor()
 
@@ -52,8 +52,8 @@ export function Header() {
         ></Switch>
       </div>
 
-      <Modal 
-        isOpen={isOpen} 
+      <Modal
+        isOpen={isOpen}
         onOpenChange={onOpenChange}
         size="2xl"
         scrollBehavior="inside"
@@ -149,8 +149,8 @@ export function Header() {
                       </div>
 
                       <div>
-                        <p className="font-medium text-red-600 text-sm sm:text-base">
-                          <FaLock aria-label="security-fix" className="inline mr-1 align-[-2px]" /> 安全漏洞修复：
+                        <p className="font-medium text-green-600 text-sm sm:text-base">
+                          <FaLock aria-label="security-fix" className="inline mr-1 align-[-2px] text-green-600" /> 安全漏洞修复：
                         </p>
                         <ul className="list-disc list-inside space-y-1 ml-2 mt-1">
                           <li>修复非空断言操作符 (!) 导致的运行时错误风险</li>
@@ -160,8 +160,8 @@ export function Header() {
                           <li>添加 API 模块加载验证，防止恶意代码注入</li>
                           <li>实现文件名净化，防止路径遍历攻击</li>
                         </ul>
-                        <p className="text-xs text-red-500 mt-2 font-medium">
-                          <FaCheckCircle aria-label="codeql-passed" className="inline mr-1 align-[-2px]" /> 已通过 CodeQL 安全扫描验证
+                        <p className="text-xs text-green-600 mt-2 font-medium">
+                          <FaCheckCircle aria-label="codeql-passed" className="inline mr-1 align-[-2px] text-green-600" /> 已通过 CodeQL 安全扫描验证
                         </p>
                       </div>
 
