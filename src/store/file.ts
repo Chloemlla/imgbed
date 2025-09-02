@@ -26,12 +26,30 @@ export const useFileStore = create<{
 }>((set, get) => ({
   files: [],
   add(file) {
+    // Validate file type and size
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/svg+xml']
+    const maxSize = 10 * 1024 * 1024 // 10MB
+    
+    if (!allowedTypes.includes(file.type)) {
+      console.error('Invalid file type:', file.type)
+      return
+    }
+    
+    if (file.size > maxSize) {
+      console.error('File too large:', file.size)
+      return
+    }
+    
+    // Sanitize file name
+    const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_').substring(0, 255)
+    const sanitizedFile = new File([file], sanitizedName, { type: file.type })
+    
     const id = nanoid()
     set((state) => ({
       files: [
         ...state.files,
         {
-          file,
+          file: sanitizedFile,
           focus: false,
           url: '',
           status: 'prepare',
@@ -41,23 +59,53 @@ export const useFileStore = create<{
       ],
     }))
     pool(async () => {
-      get().edit({
-        ...get().files.find((f) => f.id === id)!,
-        status: 'uploading',
-      })
-      const res = await upload(useApiStore.getState().getApi(), file, (p) => {
+      try {
+        const currentFile = get().files.find((f) => f.id === id)
+        if (!currentFile) {
+          console.error('File not found during upload:', id)
+          return
+        }
+        
         get().edit({
-          ...get().files.find((f) => f.id === id)!,
-          progress: p,
+          ...currentFile,
+          status: 'uploading',
         })
-      })
-      get().edit({
-        ...get().files.find((f) => f.id === id)!,
-        url: res.url,
-        status: res.err ? 'error' : 'uploaded',
-        err: res.err,
-      })
-      // Error notifications are now handled by the UI components
+        
+        const api = useApiStore.getState().getApi()
+        if (!api) {
+          throw new Error('No API available for upload')
+        }
+        
+        const res = await upload(api, file, (p) => {
+          const fileToUpdate = get().files.find((f) => f.id === id)
+          if (fileToUpdate) {
+            get().edit({
+              ...fileToUpdate,
+              progress: p,
+            })
+          }
+        })
+        
+        const finalFile = get().files.find((f) => f.id === id)
+        if (finalFile) {
+          get().edit({
+            ...finalFile,
+            url: res.url,
+            status: res.err ? 'error' : 'uploaded',
+            err: res.err,
+          })
+        }
+      } catch (error) {
+        const errorFile = get().files.find((f) => f.id === id)
+        if (errorFile) {
+          get().edit({
+            ...errorFile,
+            status: 'error',
+            err: error instanceof Error ? error.message : 'Upload failed',
+          })
+        }
+        console.error('Upload error:', error)
+      }
     })
   },
   retry(id) {
@@ -70,27 +118,57 @@ export const useFileStore = create<{
       status: 'prepare',
     })
     pool(async () => {
-      get().edit({
-        ...get().files.find((f) => f.id === id)!,
-        status: 'uploading',
-      })
-      const res = await upload(
-        useApiStore.getState().getApi(),
-        file.file,
-        (p) => {
+      try {
+        const currentFile = get().files.find((f) => f.id === id)
+        if (!currentFile) {
+          console.error('File not found during retry:', id)
+          return
+        }
+        
+        get().edit({
+          ...currentFile,
+          status: 'uploading',
+        })
+        
+        const api = useApiStore.getState().getApi()
+        if (!api) {
+          throw new Error('No API available for retry')
+        }
+        
+        const res = await upload(
+          api,
+          file.file,
+          (p) => {
+            const fileToUpdate = get().files.find((f) => f.id === id)
+            if (fileToUpdate) {
+              get().edit({
+                ...fileToUpdate,
+                progress: p,
+              })
+            }
+          },
+        )
+        
+        const finalFile = get().files.find((f) => f.id === id)
+        if (finalFile) {
           get().edit({
-            ...get().files.find((f) => f.id === id)!,
-            progress: p,
+            ...finalFile,
+            url: res.url,
+            status: res.err ? 'error' : 'uploaded',
+            err: res.err,
           })
-        },
-      )
-      get().edit({
-        ...get().files.find((f) => f.id === id)!,
-        url: res.url,
-        status: res.err ? 'error' : 'uploaded',
-        err: res.err,
-      })
-      // Error notifications are now handled by the UI components
+        }
+      } catch (error) {
+        const errorFile = get().files.find((f) => f.id === id)
+        if (errorFile) {
+          get().edit({
+            ...errorFile,
+            status: 'error',
+            err: error instanceof Error ? error.message : 'Retry failed',
+          })
+        }
+        console.error('Retry error:', error)
+      }
     })
   },
   del(id) {
