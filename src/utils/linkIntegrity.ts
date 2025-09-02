@@ -37,8 +37,15 @@ export function validateLinkIntegrity(element: HTMLAnchorElement): boolean {
   const url = element.href
   const text = element.textContent || ''
   
-  // Skip validation for non-external links or empty hrefs
-  if (!url || url.startsWith('#') || url.startsWith('javascript:') || url === window.location.href) {
+  // Skip validation for non-external links, empty hrefs, and dangerous schemes
+  if (!url || 
+      url.startsWith('#') || 
+      url.startsWith('javascript:') || 
+      url.startsWith('data:') || 
+      url.startsWith('vbscript:') || 
+      url.startsWith('file:') || 
+      url.startsWith('blob:') || 
+      url === window.location.href) {
     return true
   }
   
@@ -161,8 +168,15 @@ export class LinkIntegrityMonitor {
     
     const url = element.href
     
-    // Skip non-external links
-    if (!url || url.startsWith('#') || url.startsWith('javascript:') || url === window.location.href) {
+    // Skip non-external links and dangerous schemes
+    if (!url || 
+        url.startsWith('#') || 
+        url.startsWith('javascript:') || 
+        url.startsWith('data:') || 
+        url.startsWith('vbscript:') || 
+        url.startsWith('file:') || 
+        url.startsWith('blob:') || 
+        url === window.location.href) {
       return false
     }
     
