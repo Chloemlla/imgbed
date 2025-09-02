@@ -3,6 +3,7 @@ import { Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDi
 import { Switch } from '@nextui-org/react'
 import { PROTECTED_LINKS } from '../utils/linkIntegrity'
 import { useSecurityMonitor } from '../hooks/useSecurityMonitor'
+import { FaLock, FaCheckCircle, FaSun, FaMoon } from 'react-icons/fa'
 
 export function Header() {
   const [theme, setTheme] = useState(() => {
@@ -39,17 +40,9 @@ export function Header() {
           color="primary"
           thumbIcon={({ isSelected, className }: { isSelected: boolean; className: string }) =>
             isSelected ? (
-              <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="4"/>
-                <path d="m12 2 3 10h-6l3-10z"/>
-                <path d="m12 22-3-10h6l-3 10z"/>
-                <path d="m20 12-10-3v6l10-3z"/>
-                <path d="m4 12 10 3v-6l-10 3z"/>
-              </svg>
+              <FaSun aria-label="light-mode" className={className} />
             ) : (
-              <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
-              </svg>
+              <FaMoon aria-label="dark-mode" className={className} />
             )
           }
           isSelected={theme === 'light'}
@@ -153,6 +146,23 @@ export function Header() {
                           <li>优化空操作时的提示信息</li>
                           <li>添加 Wrangler 部署支持和完整文档</li>
                         </ul>
+                      </div>
+
+                      <div>
+                        <p className="font-medium text-red-600 text-sm sm:text-base">
+                          <FaLock aria-label="security-fix" className="inline mr-1 align-[-2px]" /> 安全漏洞修复：
+                        </p>
+                        <ul className="list-disc list-inside space-y-1 ml-2 mt-1">
+                          <li>修复非空断言操作符 (!) 导致的运行时错误风险</li>
+                          <li>添加文件类型和大小验证，防止恶意文件上传</li>
+                          <li>完善 URL 协议检查，阻止 javascript:、data:、vbscript: 等危险协议</li>
+                          <li>增强异步操作错误处理，提升系统稳定性</li>
+                          <li>添加 API 模块加载验证，防止恶意代码注入</li>
+                          <li>实现文件名净化，防止路径遍历攻击</li>
+                        </ul>
+                        <p className="text-xs text-red-500 mt-2 font-medium">
+                          <FaCheckCircle aria-label="codeql-passed" className="inline mr-1 align-[-2px]" /> 已通过 CodeQL 安全扫描验证
+                        </p>
                       </div>
 
                       <p className="text-xs text-gray-500 pt-2 border-t border-gray-200">
