@@ -3,7 +3,7 @@ import { Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDi
 import { Switch } from '@nextui-org/react'
 import { PROTECTED_LINKS } from '../utils/linkIntegrity'
 import { useSecurityMonitor } from '../hooks/useSecurityMonitor'
-import { FaLock, FaCheckCircle, FaSun, FaMoon } from 'react-icons/fa'
+import { FaLock, FaCheckCircle, FaSun, FaMoon, FaInfoCircle, FaCodeBranch, FaFileContract, FaCogs, FaBug, FaRocket, FaSmile, FaExternalLinkAlt } from 'react-icons/fa'
 
 export function Header() {
   const [theme, setTheme] = useState(() => {
@@ -70,35 +70,39 @@ export function Header() {
               <ModalBody className="px-4 sm:px-6 max-h-[70vh] overflow-y-auto">
                 <div className="space-y-4 sm:space-y-6">
                   <div>
-                    <p className="font-semibold mb-2 text-base sm:text-lg">项目信息</p>
+                    <p className="font-semibold mb-2 text-base sm:text-lg"><FaInfoCircle className="inline mr-1 align-[-2px]" /> 项目信息</p>
                     <p className="text-sm sm:text-base mb-2">本项目开源自：</p>
                     <Link
                       href={PROTECTED_LINKS[0].url}
                       isExternal
-                      showAnchorIcon
                       className="block text-sm sm:text-base break-all"
                       data-integrity-hash={PROTECTED_LINKS[0].hash}
                     >
-                      {PROTECTED_LINKS[0].text}
+                      <span className="inline-flex items-center gap-1">
+                        <FaExternalLinkAlt aria-hidden className="text-blue-600" />
+                        {PROTECTED_LINKS[0].text}
+                      </span>
                     </Link>
                   </div>
 
                   <div>
-                    <p className="font-semibold mb-2 text-base sm:text-lg">基于项目</p>
+                    <p className="font-semibold mb-2 text-base sm:text-lg"><FaCodeBranch className="inline mr-1 align-[-2px]" /> 基于项目</p>
                     <p className="text-sm sm:text-base mb-2">基于以下项目更改：</p>
                     <Link
                       href={PROTECTED_LINKS[1].url}
                       isExternal
-                      showAnchorIcon
                       className="block text-sm sm:text-base break-all"
                       data-integrity-hash={PROTECTED_LINKS[1].hash}
                     >
-                      {PROTECTED_LINKS[1].text}
+                      <span className="inline-flex items-center gap-1">
+                        <FaExternalLinkAlt aria-hidden className="text-blue-600" />
+                        {PROTECTED_LINKS[1].text}
+                      </span>
                     </Link>
                   </div>
 
                   <div>
-                    <p className="font-semibold mb-2 text-base sm:text-lg">开源协议</p>
+                    <p className="font-semibold mb-2 text-base sm:text-lg"><FaFileContract className="inline mr-1 align-[-2px]" /> 开源协议</p>
                     <p className="text-xs sm:text-sm text-gray-600 mb-2">
                       本项目不同于原开源项目，因为原开源项目没有开源协议。
                     </p>
@@ -106,20 +110,22 @@ export function Header() {
                       本项目使用 <Link
                         href={PROTECTED_LINKS[2].url}
                         isExternal
-                        showAnchorIcon
                         className="font-mono text-blue-600 text-xs sm:text-sm"
                         data-integrity-hash={PROTECTED_LINKS[2].hash}
                       >
-                        {PROTECTED_LINKS[2].text}
+                        <span className="inline-flex items-center gap-1">
+                          <FaExternalLinkAlt aria-hidden className="text-blue-600" />
+                          {PROTECTED_LINKS[2].text}
+                        </span>
                       </Link> 作为开源协议。
                     </p>
                   </div>
 
                   <div>
-                    <p className="font-semibold mb-2 text-base sm:text-lg">项目改进</p>
+                    <p className="font-semibold mb-2 text-base sm:text-lg"><FaCogs className="inline mr-1 align-[-2px]" /> 项目改进</p>
                     <div className="text-xs sm:text-sm text-gray-600 space-y-3">
                       <div>
-                        <p className="font-medium text-gray-800 text-sm sm:text-base">功能修复：</p>
+                        <p className="font-medium text-gray-800 text-sm sm:text-base"><FaBug className="inline mr-1 align-[-2px]" /> 功能修复：</p>
                         <ul className="list-disc list-inside space-y-1 ml-2 mt-1">
                           <li>修复了 useEffect 缺少依赖数组导致的内存泄漏</li>
                           <li>修复了重复选择同一API仍显示通知的问题</li>
@@ -129,7 +135,7 @@ export function Header() {
                       </div>
 
                       <div>
-                        <p className="font-medium text-gray-800 text-sm sm:text-base">功能优化：</p>
+                        <p className="font-medium text-gray-800 text-sm sm:text-base"><FaRocket className="inline mr-1 align-[-2px]" /> 功能优化：</p>
                         <ul className="list-disc list-inside space-y-1 ml-2 mt-1">
                           <li>统一通知系统，替换 react-hot-toast 为自定义组件</li>
                           <li>添加文件选择器图片类型限制</li>
@@ -139,7 +145,7 @@ export function Header() {
                       </div>
 
                       <div>
-                        <p className="font-medium text-gray-800 text-sm sm:text-base">用户体验改进：</p>
+                        <p className="font-medium text-gray-800 text-sm sm:text-base"><FaSmile className="inline mr-1 align-[-2px]" /> 用户体验改进：</p>
                         <ul className="list-disc list-inside space-y-1 ml-2 mt-1">
                           <li>添加 ImgBB 和 Telegraph 服务连通性提示</li>
                           <li>改进进度条可访问性（aria-label）</li>
