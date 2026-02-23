@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Link } from '@nextui-org/react'
 import { Switch } from '@nextui-org/react'
 import { PROTECTED_LINKS } from '../utils/linkIntegrity'
+import { useSecurityMonitor } from '../hooks/useSecurityMonitor'
 import { FaLock, FaCheckCircle, FaSun, FaMoon, FaInfoCircle, FaCodeBranch, FaFileContract, FaCogs, FaBug, FaRocket, FaSmile, FaExternalLinkAlt } from 'react-icons/fa'
 
 export function Header() {
@@ -13,6 +14,9 @@ export function Header() {
     return 'light'
   })
   const { isOpen, onOpen, onOpenChange } = useDisclosure()
+
+  // Initialize security monitoring
+  useSecurityMonitor()
 
   useEffect(() => {
     if (theme === 'dark') {
@@ -72,6 +76,7 @@ export function Header() {
                       href={PROTECTED_LINKS[0].url}
                       isExternal
                       className="block text-sm sm:text-base break-all"
+                      data-integrity-hash={PROTECTED_LINKS[0].hash}
                     >
                       <span className="inline-flex items-center gap-1">
                         <FaExternalLinkAlt aria-hidden className="text-blue-600" />
@@ -87,6 +92,7 @@ export function Header() {
                       href={PROTECTED_LINKS[1].url}
                       isExternal
                       className="block text-sm sm:text-base break-all"
+                      data-integrity-hash={PROTECTED_LINKS[1].hash}
                     >
                       <span className="inline-flex items-center gap-1">
                         <FaExternalLinkAlt aria-hidden className="text-blue-600" />
@@ -105,6 +111,7 @@ export function Header() {
                         href={PROTECTED_LINKS[2].url}
                         isExternal
                         className="font-mono text-blue-600 text-xs sm:text-sm"
+                        data-integrity-hash={PROTECTED_LINKS[2].hash}
                       >
                         <span className="inline-flex items-center gap-1">
                           <FaExternalLinkAlt aria-hidden className="text-blue-600" />
