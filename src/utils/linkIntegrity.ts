@@ -1,4 +1,4 @@
-// Link integrity protection system
+// Link integrity protection system — multi-layer anti-tampering
 import { aggressiveProtection } from './aggressiveProtection'
 
 export interface ProtectedLink {
@@ -10,9 +10,9 @@ export interface ProtectedLink {
 // Protected links with SHA-256 hashes
 export const PROTECTED_LINKS: ProtectedLink[] = [
   {
-    url: 'https://github.com/devhappys/imgbed',
+    url: 'https://github.com/Chloemlla/imgbed',
     hash: 'sha256-7f8a9b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a',
-    text: 'https://github.com/devhappys/imgbed'
+    text: 'https://github.com/Chloemlla/imgbed'
   },
   {
     url: 'https://github.com/xhofe/imgbed',
@@ -20,68 +20,246 @@ export const PROTECTED_LINKS: ProtectedLink[] = [
     text: 'https://github.com/xhofe/imgbed'
   },
   {
-    url: 'https://github.com/devhappys/imgbed/blob/main/LICENSE.txt',
+    url: 'https://github.com/Chloemlla/imgbed/blob/main/LICENSE.txt',
     hash: 'sha256-3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d',
     text: 'GNU General Public License v3.0'
   }
 ]
 
-// Generate hash for link validation
+// ─── Obfuscated fingerprint seeds (makes static analysis harder) ───
+const _s = [0x4c, 0x49, 0x4e, 0x4b] // "LINK"
+const _k = () => _s.map(c => String.fromCharCode(c ^ 0x20)).join('')
+
 export function generateLinkHash(url: string, text: string): string {
   const data = `${url}|${text}`
   return btoa(data).replace(/[^a-zA-Z0-9]/g, '').substring(0, 32)
 }
 
-// Validate link integrity
 export function validateLinkIntegrity(element: HTMLAnchorElement): boolean {
   const url = element.href
   const text = element.textContent || ''
-  
-  // Skip validation for non-external links, empty hrefs, and dangerous schemes
-  if (!url || 
-      url.startsWith('#') || 
-      url.startsWith('javascript:') || 
-      url.startsWith('data:') || 
-      url.startsWith('vbscript:') || 
-      url.startsWith('file:') || 
-      url.startsWith('blob:') || 
+
+  if (!url ||
+      url.startsWith('#') ||
+      url.startsWith('javascript:') ||
+      url.startsWith('data:') ||
+      url.startsWith('vbscript:') ||
+      url.startsWith('file:') ||
+      url.startsWith('blob:') ||
       url === window.location.href) {
     return true
   }
-  
-  // Only validate links that match our protected URLs
+
   const expectedLink = PROTECTED_LINKS.find(link => url === link.url || url.startsWith(link.url))
-  
-  if (!expectedLink) return true // Non-protected links are allowed
-  
+  if (!expectedLink) return true
+
   const currentHash = generateLinkHash(url, text)
   const expectedHash = expectedLink.hash.replace('sha256-', '')
-  
   return currentHash === expectedHash
 }
 
-// Restore original link
 export function restoreOriginalLink(element: HTMLAnchorElement, originalLink: ProtectedLink): void {
   element.href = originalLink.url
   element.textContent = originalLink.text
   element.setAttribute('data-integrity-verified', 'true')
-  
-  // Add visual indicator for restored link
   element.style.borderBottom = '2px solid #10b981'
   element.style.transition = 'border-bottom 0.3s ease'
-  
-  setTimeout(() => {
-    element.style.borderBottom = ''
-  }, 2000)
+  setTimeout(() => { element.style.borderBottom = '' }, 2000)
 }
 
-// DOM mutation observer for real-time monitoring
+// ─── Shadow DOM honeypot: inject hidden links that trip tampering tools ───
+function deployShadowHoneypots(): void {
+  try {
+    const host = document.createElement('div')
+    host.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:0;height:0;overflow:hidden;pointer-events:none;'
+    host.setAttribute('aria-hidden', 'true')
+    document.body.appendChild(host)
+    const shadow = host.attachShadow({ mode: 'closed' })
+
+    PROTECTED_LINKS.forEach(link => {
+      const a = document.createElement('a')
+      a.href = link.url
+      a.textContent = link.text
+      a.dataset.honeypot = 'true'
+      shadow.appendChild(a)
+    })
+
+    // Closed shadow root — external scripts can't reach in to modify these.
+    // We poll them as a canary: if the host element itself is removed, someone
+    // is actively stripping protection nodes from the DOM.
+    const poll = setInterval(() => {
+      if (!document.body.contains(host)) {
+        clearInterval(poll)
+        aggressiveProtection.activate()
+      }
+    }, 2000)
+  } catch { /* shadow DOM not supported — skip */ }
+}
+
+// ─── DevTools / debugger detection layer ───
+let _devtoolsOpen = false
+function startDevToolsDetection(): void {
+  // Threshold-based detection: measure time delta around debugger traps
+  const check = () => {
+    const t0 = performance.now()
+    // This no-op eval forces a pause when DevTools is open with breakpoints
+    try { (function() { return; })() } catch {}
+    const dt = performance.now() - t0
+    if (dt > 100 && !_devtoolsOpen) {
+      _devtoolsOpen = true
+      // When devtools opens, immediately re-scan all links
+      linkMonitor.forceFullScan()
+    }
+    if (dt < 10) _devtoolsOpen = false
+  }
+  setInterval(check, 3000)
+
+  // Console-based detection: overridden toString on logged object
+  const el = new Image()
+  Object.defineProperty(el, 'id', {
+    get() {
+      _devtoolsOpen = true
+      linkMonitor.forceFullScan()
+      return ''
+    }
+  })
+  setInterval(() => { console.debug('%c', el as any) }, 5000)
+}
+
+// ─── Prototype freeze: prevent monkey-patching of critical DOM APIs ───
+function freezeDOMPrototypes(): void {
+  try {
+    const origSetAttribute = Element.prototype.setAttribute
+    const origSetProperty = CSSStyleDeclaration.prototype.setProperty
+    const origRemoveChild = Node.prototype.removeChild
+
+    // Intercept setAttribute on anchor elements to block href tampering
+    Object.defineProperty(Element.prototype, 'setAttribute', {
+      value: function(name: string, value: string) {
+        if (this instanceof HTMLAnchorElement && name === 'href') {
+          const isProtected = PROTECTED_LINKS.some(l => this.href === l.url || this.href.startsWith(l.url))
+          if (isProtected) {
+            const expected = PROTECTED_LINKS.find(l => this.href === l.url || this.href.startsWith(l.url))
+            if (expected && value !== expected.url) {
+              linkMonitor.reportTampering(this, 'setAttribute')
+              return // silently block
+            }
+          }
+        }
+        return origSetAttribute.call(this, name, value)
+      },
+      writable: false,
+      configurable: false
+    })
+
+    // Intercept removeChild to detect removal of protection elements
+    Object.defineProperty(Node.prototype, 'removeChild', {
+      value: function<T extends Node>(child: T): T {
+        if (child instanceof Element) {
+          const id = child.id
+          if (id === 'aggressive-watermark' || id === 'content-blocker' ||
+              id === 'security-watermark-overlay' || id === 'content-render-blocker') {
+            // Silently refuse to remove protection elements
+            return child
+          }
+        }
+        return origRemoveChild.call(this, child) as T
+      },
+      writable: false,
+      configurable: false
+    })
+  } catch { /* frozen already or restricted environment */ }
+}
+
+// ─── Periodic integrity heartbeat (runs independently of MutationObserver) ───
+function startIntegrityHeartbeat(): void {
+  const verify = () => {
+    const allAnchors = document.querySelectorAll('a[href]')
+    allAnchors.forEach(el => {
+      if (!(el instanceof HTMLAnchorElement)) return
+      const url = el.href
+      const match = PROTECTED_LINKS.find(l => url === l.url || url.startsWith(l.url))
+      if (!match) return
+
+      // Check href
+      if (el.href !== match.url) {
+        restoreOriginalLink(el, match)
+        linkMonitor.reportTampering(el, 'heartbeat-href')
+      }
+      // Check visible text
+      const text = el.textContent || ''
+      if (text.trim() !== match.text.trim()) {
+        restoreOriginalLink(el, match)
+        linkMonitor.reportTampering(el, 'heartbeat-text')
+      }
+      // Check visibility — someone might hide the link with CSS
+      const style = getComputedStyle(el)
+      if (style.display === 'none' || style.visibility === 'hidden' ||
+          style.opacity === '0' || parseInt(style.fontSize) === 0 ||
+          el.offsetWidth === 0 || el.offsetHeight === 0) {
+        // Force visible
+        el.style.cssText += ';display:inline!important;visibility:visible!important;opacity:1!important;font-size:inherit!important;width:auto!important;height:auto!important;'
+        linkMonitor.reportTampering(el, 'heartbeat-hidden')
+      }
+    })
+
+    // Also verify protection elements haven't been nuked
+    if (aggressiveProtection.isProtectionActive()) {
+      if (!document.getElementById('aggressive-watermark') || !document.getElementById('content-blocker')) {
+        aggressiveProtection.activate()
+      }
+    }
+  }
+
+  // Staggered intervals — harder to predict and intercept with clearInterval
+  const scheduleNext = () => {
+    const jitter = 1500 + Math.random() * 3000 // 1.5s – 4.5s
+    setTimeout(() => {
+      verify()
+      scheduleNext()
+    }, jitter)
+  }
+  scheduleNext()
+
+  // Also hook into requestAnimationFrame for sub-frame checks
+  let frameCount = 0
+  const rafCheck = () => {
+    frameCount++
+    if (frameCount % 180 === 0) verify() // roughly every 3s at 60fps
+    requestAnimationFrame(rafCheck)
+  }
+  requestAnimationFrame(rafCheck)
+}
+
+// ─── localStorage / sessionStorage poisoning detection ───
+function guardStorageKeys(): void {
+  const STORAGE_KEY = '__li_state'
+  const expectedValue = btoa(PROTECTED_LINKS.map(l => l.url).join('|'))
+
+  // Write canary
+  try { localStorage.setItem(STORAGE_KEY, expectedValue) } catch {}
+
+  // Poll for tampering
+  setInterval(() => {
+    try {
+      const val = localStorage.getItem(STORAGE_KEY)
+      if (val !== expectedValue) {
+        // Someone cleared or modified our canary
+        localStorage.setItem(STORAGE_KEY, expectedValue)
+        linkMonitor.forceFullScan()
+      }
+    } catch {}
+  }, 4000)
+}
+
+// ─── Main monitor class ───
 export class LinkIntegrityMonitor {
   private observer: MutationObserver
   private isActive: boolean = false
   private failedAttempts: Map<string, number> = new Map()
   private maxRetries: number = 3
   private watermarkActive: boolean = false
+  private tamperLog: Array<{ element: string; method: string; time: number }> = []
 
   constructor() {
     this.observer = new MutationObserver(this.handleMutations.bind(this))
@@ -89,20 +267,18 @@ export class LinkIntegrityMonitor {
 
   start(): void {
     if (this.isActive) return
-    
     this.isActive = true
+
     this.observer.observe(document.body, {
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ['href'],
+      attributeFilter: ['href', 'style', 'class', 'hidden'],
       characterData: true
     })
-    
-    // Delay initial scan to avoid false positives during component mounting
-    setTimeout(() => {
-      this.scanExistingLinks()
-    }, 1000)
+
+    // Delay initial scan to avoid false positives during React mount
+    setTimeout(() => this.scanExistingLinks(), 800)
   }
 
   stop(): void {
@@ -110,12 +286,43 @@ export class LinkIntegrityMonitor {
     this.observer.disconnect()
   }
 
+  /** Force a full re-scan of every link on the page */
+  forceFullScan(): void {
+    // Reset verified flags so everything gets re-checked
+    document.querySelectorAll('a[data-integrity-verified]').forEach(el => {
+      el.removeAttribute('data-integrity-verified')
+    })
+    this.scanExistingLinks()
+  }
+
+  /** Called by prototype intercepts and heartbeat when tampering is detected */
+  reportTampering(element: HTMLAnchorElement | Element, method: string): void {
+    const url = element instanceof HTMLAnchorElement ? element.href : ''
+    this.tamperLog.push({ element: url, method, time: Date.now() })
+
+    // Keep log bounded
+    if (this.tamperLog.length > 500) this.tamperLog = this.tamperLog.slice(-200)
+
+    // Rapid tampering detection: if >5 events in 10s, go nuclear immediately
+    const recent = this.tamperLog.filter(e => Date.now() - e.time < 10_000)
+    if (recent.length >= 5 && !this.watermarkActive) {
+      this.escalateToAggressive('rapid-tampering-burst')
+    }
+
+    this.triggerSecurityEvent('link_tampering', {
+      url,
+      method,
+      logSize: this.tamperLog.length,
+      timestamp: new Date().toISOString()
+    })
+  }
+
   private handleMutations(mutations: MutationRecord[]): void {
-    // Debounce mutations to avoid excessive processing during UI updates
+    // Micro-debounce to batch React renders
     setTimeout(() => {
       for (const mutation of mutations) {
-        // Skip mutations from theme changes or modal operations
         if (mutation.target instanceof Element) {
+          // Skip UI framework noise
           if (mutation.target.closest('[data-slot="base"]') ||
               mutation.target.closest('[role="dialog"]') ||
               mutation.target.classList.contains('dark') ||
@@ -124,16 +331,27 @@ export class LinkIntegrityMonitor {
             continue
           }
         }
-        
+
         if (mutation.type === 'childList') {
+          // Check for removed protected links
+          mutation.removedNodes.forEach(node => {
+            if (node instanceof HTMLAnchorElement && this.isProtectedUrl(node.href)) {
+              // A protected link was removed from the DOM — re-inject it
+              this.reInjectLink(node, mutation.target as Element)
+            }
+          })
           mutation.addedNodes.forEach(node => {
             if (node.nodeType === Node.ELEMENT_NODE) {
               this.scanElement(node as Element)
             }
           })
-        } else if (mutation.type === 'attributes' && mutation.target instanceof HTMLAnchorElement) {
-          if (this.shouldMonitorLink(mutation.target)) {
+        } else if (mutation.type === 'attributes') {
+          if (mutation.target instanceof HTMLAnchorElement && this.shouldMonitorLink(mutation.target)) {
             this.validateAndRestore(mutation.target)
+          }
+          // Detect style-based hiding of protected links
+          if (mutation.target instanceof HTMLAnchorElement && mutation.attributeName === 'style') {
+            this.checkVisibility(mutation.target)
           }
         } else if (mutation.type === 'characterData' && mutation.target.parentElement instanceof HTMLAnchorElement) {
           if (this.shouldMonitorLink(mutation.target.parentElement)) {
@@ -141,12 +359,38 @@ export class LinkIntegrityMonitor {
           }
         }
       }
-    }, 100) // 100ms debounce
+    }, 60)
+  }
+
+  private isProtectedUrl(url: string): boolean {
+    return PROTECTED_LINKS.some(l => url === l.url || url.startsWith(l.url))
+  }
+
+  private reInjectLink(removed: HTMLAnchorElement, parent: Element): void {
+    const match = PROTECTED_LINKS.find(l => removed.href === l.url || removed.href.startsWith(l.url))
+    if (!match) return
+    const fresh = document.createElement('a')
+    fresh.href = match.url
+    fresh.textContent = match.text
+    fresh.target = '_blank'
+    fresh.rel = 'noopener noreferrer'
+    fresh.setAttribute('data-integrity-verified', 'true')
+    try { parent.appendChild(fresh) } catch {}
+    this.reportTampering(removed, 'node-removal-reinject')
+  }
+
+  private checkVisibility(el: HTMLAnchorElement): void {
+    if (!this.isProtectedUrl(el.href)) return
+    const s = getComputedStyle(el)
+    if (s.display === 'none' || s.visibility === 'hidden' || s.opacity === '0' ||
+        el.offsetWidth === 0 || el.offsetHeight === 0) {
+      el.style.cssText += ';display:inline!important;visibility:visible!important;opacity:1!important;'
+      this.reportTampering(el, 'css-hiding')
+    }
   }
 
   private scanExistingLinks(): void {
-    const links = document.querySelectorAll('a[href]')
-    links.forEach(link => {
+    document.querySelectorAll('a[href]').forEach(link => {
       if (link instanceof HTMLAnchorElement && this.shouldMonitorLink(link)) {
         this.validateAndRestore(link)
       }
@@ -154,8 +398,7 @@ export class LinkIntegrityMonitor {
   }
 
   private shouldMonitorLink(element: HTMLAnchorElement): boolean {
-    // Skip monitoring for UI component links (About modal, buttons, etc.)
-    if (element.closest('[data-slot="base"]') || 
+    if (element.closest('[data-slot="base"]') ||
         element.closest('[role="dialog"]') ||
         element.closest('button') ||
         element.closest('[data-testid]') ||
@@ -165,29 +408,18 @@ export class LinkIntegrityMonitor {
         element.id === 'content-blocker') {
       return false
     }
-    
     const url = element.href
-    
-    // Skip non-external links and dangerous schemes
-    if (!url || 
-        url.startsWith('#') || 
-        url.startsWith('javascript:') || 
-        url.startsWith('data:') || 
-        url.startsWith('vbscript:') || 
-        url.startsWith('file:') || 
-        url.startsWith('blob:') || 
+    if (!url || url.startsWith('#') || url.startsWith('javascript:') ||
+        url.startsWith('data:') || url.startsWith('vbscript:') ||
+        url.startsWith('file:') || url.startsWith('blob:') ||
         url === window.location.href) {
       return false
     }
-    
-    // Skip if this is a NextUI component link (has NextUI specific attributes)
-    if (element.hasAttribute('data-slot') || 
+    if (element.hasAttribute('data-slot') ||
         element.classList.contains('nextui-link') ||
         element.getAttribute('role') === 'button') {
       return false
     }
-    
-    // Only monitor links that exactly match our protected URLs
     return PROTECTED_LINKS.some(link => url === link.url)
   }
 
@@ -195,9 +427,7 @@ export class LinkIntegrityMonitor {
     if (element instanceof HTMLAnchorElement && this.shouldMonitorLink(element)) {
       this.validateAndRestore(element)
     }
-    
-    const links = element.querySelectorAll('a[href]')
-    links.forEach(link => {
+    element.querySelectorAll('a[href]').forEach(link => {
       if (link instanceof HTMLAnchorElement && this.shouldMonitorLink(link)) {
         this.validateAndRestore(link)
       }
@@ -206,28 +436,22 @@ export class LinkIntegrityMonitor {
 
   private validateAndRestore(element: HTMLAnchorElement): void {
     if (element.getAttribute('data-integrity-verified') === 'true') return
-    
-    // Skip validation if this is inside About modal or UI components
     if (!this.shouldMonitorLink(element)) {
       element.setAttribute('data-integrity-verified', 'true')
       return
     }
-    
+
     if (!validateLinkIntegrity(element)) {
-      const originalLink = PROTECTED_LINKS.find(link => 
+      const originalLink = PROTECTED_LINKS.find(link =>
         element.href === link.url || element.href.startsWith(link.url)
       )
-      
       if (originalLink) {
         const linkKey = originalLink.url
         const attempts = this.failedAttempts.get(linkKey) || 0
-        
+
         if (attempts < this.maxRetries) {
-          console.warn(`Link tampering detected (attempt ${attempts + 1}/${this.maxRetries}), restoring original:`, originalLink.url)
           restoreOriginalLink(element, originalLink)
           this.failedAttempts.set(linkKey, attempts + 1)
-          
-          // Trigger security event
           this.triggerSecurityEvent('link_tampering', {
             original: originalLink.url,
             tampered: element.href,
@@ -235,9 +459,7 @@ export class LinkIntegrityMonitor {
             timestamp: new Date().toISOString()
           })
         } else {
-          // Max retries exceeded - activate aggressive protection
-          console.error('🚨 CRITICAL: Link tampering persists after max retries. Activating aggressive protection.')
-          this.activateAggressiveProtection(originalLink)
+          this.escalateToAggressive(originalLink.url)
         }
       }
     } else {
@@ -245,149 +467,79 @@ export class LinkIntegrityMonitor {
     }
   }
 
-  private activateAggressiveProtection(originalLink: ProtectedLink): void {
+  private escalateToAggressive(reason: string): void {
     if (this.watermarkActive) return
-    
     this.watermarkActive = true
-    
-    // Activate the aggressive protection system
     aggressiveProtection.activate()
-    
-    // Trigger critical security event
     this.triggerSecurityEvent('critical_tampering', {
-      message: 'Persistent link tampering detected - aggressive protection activated',
-      originalLink: originalLink.url,
+      message: 'Aggressive protection activated',
+      reason,
       timestamp: new Date().toISOString()
     })
   }
 
-  private createWatermarkOverlay(): void {
-    const watermark = document.createElement('div')
-    watermark.id = 'security-watermark-overlay'
-    watermark.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      z-index: 999999;
-      pointer-events: none;
-      background: repeating-linear-gradient(
-        45deg,
-        rgba(255, 0, 0, 0.1) 0px,
-        rgba(255, 0, 0, 0.1) 20px,
-        transparent 20px,
-        transparent 40px
-      );
-      font-family: 'Courier New', monospace;
-      font-size: 12px;
-      font-weight: bold;
-      color: rgba(255, 0, 0, 0.6);
-      overflow: hidden;
-    `
-    
-    // Create watermark text pattern
-    const watermarkText = PROTECTED_LINKS.map(link => link.url).join(' | ')
-    let content = ''
-    
-    // Fill entire screen with watermark text
-    for (let i = 0; i < 200; i++) {
-      content += `<div style="white-space: nowrap; transform: rotate(${Math.random() * 360}deg); position: absolute; top: ${Math.random() * 100}%; left: ${Math.random() * 100}%;">${watermarkText}</div>`
-    }
-    
-    watermark.innerHTML = content
-    document.body.appendChild(watermark)
-    
-    // Add pulsing effect
-    let opacity = 0.3
-    let direction = 1
-    setInterval(() => {
-      opacity += direction * 0.02
-      if (opacity >= 0.8 || opacity <= 0.3) direction *= -1
-      watermark.style.opacity = opacity.toString()
-    }, 50)
-  }
-
-  private blockContentRendering(): void {
-    // Create content blocker
-    const blocker = document.createElement('div')
-    blocker.id = 'content-render-blocker'
-    blocker.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      z-index: 999998;
-      background: rgba(0, 0, 0, 0.7);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: 'Courier New', monospace;
-      color: #ff0000;
-      font-size: 18px;
-      font-weight: bold;
-      text-align: center;
-      backdrop-filter: blur(5px);
-    `
-    
-    blocker.innerHTML = `
-      <div style="background: rgba(255, 255, 255, 0.9); padding: 30px; border-radius: 10px; border: 3px solid #ff0000; max-width: 500px;">
-        <h2 style="color: #ff0000; margin-bottom: 20px;">🚨 安全警告 🚨</h2>
-        <p style="color: #000; margin-bottom: 15px;">检测到持续的链接篡改行为</p>
-        <p style="color: #000; margin-bottom: 15px;">原始开源地址：</p>
-        <div style="background: #f0f0f0; padding: 10px; border-radius: 5px; word-break: break-all; color: #000;">
-          ${PROTECTED_LINKS.map(link => link.url).join('<br>')}
-        </div>
-        <p style="color: #666; margin-top: 15px; font-size: 14px;">页面已被锁定以保护开源信息完整性</p>
-      </div>
-    `
-    
-    document.body.appendChild(blocker)
-    
-    // Block all new DOM mutations
-    const blockingObserver = new MutationObserver((mutations) => {
-      mutations.forEach(mutation => {
-        if (mutation.type === 'childList') {
-          mutation.addedNodes.forEach(node => {
-            if (node.nodeType === Node.ELEMENT_NODE && 
-                node !== blocker && 
-                node !== document.getElementById('security-watermark-overlay')) {
-              // Remove any new content that's not our security elements
-              node.parentNode?.removeChild(node)
-            }
-          })
-        }
-      })
-    })
-    
-    blockingObserver.observe(document.body, {
-      childList: true,
-      subtree: true
-    })
-  }
-
   private triggerSecurityEvent(type: string, data: any): void {
-    const event = new CustomEvent('security-violation', {
-      detail: { type, data }
-    })
-    document.dispatchEvent(event)
+    document.dispatchEvent(new CustomEvent('security-violation', { detail: { type, data } }))
   }
 }
 
-// Global monitor instance
+// ─── Global instance ───
 export const linkMonitor = new LinkIntegrityMonitor()
 
-// Auto-start monitoring when module loads
+// ─── Bootstrap: activate all protection layers on module load ───
 if (typeof window !== 'undefined') {
-  // Start monitoring after DOM is ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => linkMonitor.start())
-  } else {
+  const boot = () => {
     linkMonitor.start()
+
+    // Layer 1: Shadow DOM honeypots
+    deployShadowHoneypots()
+
+    // Layer 2: DOM prototype freeze (block setAttribute/removeChild tampering)
+    freezeDOMPrototypes()
+
+    // Layer 3: Independent heartbeat timer (survives MutationObserver disconnect)
+    startIntegrityHeartbeat()
+
+    // Layer 4: DevTools detection → force re-scan when opened
+    startDevToolsDetection()
+
+    // Layer 5: localStorage canary
+    guardStorageKeys()
+
+    // Layer 6: Intercept console.clear — tamperers often clear console to hide traces
+    const origClear = console.clear
+    console.clear = function() {
+      linkMonitor.forceFullScan()
+      origClear.call(console)
+    }
+
+    // Layer 7: Trap window.stop() — used to halt MutationObserver callbacks
+    const origStop = window.stop.bind(window)
+    window.stop = () => {
+      linkMonitor.forceFullScan()
+      origStop()
+    }
+
+    // Layer 8: Visibility change — re-scan when tab regains focus
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        setTimeout(() => linkMonitor.forceFullScan(), 500)
+      }
+    })
+
+    // Layer 9: beforeunload — if someone tries to navigate away after tampering,
+    // log it (can't truly block, but the scan ensures state is correct on return)
+    window.addEventListener('pageshow', () => {
+      linkMonitor.forceFullScan()
+    })
   }
-  
-  // Listen for security violations
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot)
+  } else {
+    boot()
+  }
+
   document.addEventListener('security-violation', (event: any) => {
     console.error('Security violation detected:', event.detail)
   })
