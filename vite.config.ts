@@ -129,7 +129,7 @@ export default defineConfig(({ mode }) => ({
       // 压缩选项
       compress: {
         // 删除 console 语句
-        drop_console: false, // 保留console用于调试
+        drop_console: true,
         // 删除 debugger 语句
         drop_debugger: true,
         // 删除死代码
@@ -157,7 +157,6 @@ export default defineConfig(({ mode }) => ({
         manualChunks: {
           vendor: ['react', 'react-dom'],
           ui: ['@nextui-org/react'],
-          utils: ['./src/utils/linkIntegrity.ts', './src/utils/aggressiveProtection.ts']
         }
       }
     }

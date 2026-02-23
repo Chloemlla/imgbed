@@ -27,7 +27,7 @@ export const useFileStore = create<{
   files: [],
   add(file) {
     // Validate file type and size
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/svg+xml']
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp']
     const maxSize = 10 * 1024 * 1024 // 10MB
     
     if (!allowedTypes.includes(file.type)) {

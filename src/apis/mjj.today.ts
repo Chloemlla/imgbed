@@ -9,7 +9,7 @@ const api: Api = {
     type: 'file',
     action: 'upload',
     timestamp: Date.now(),
-    auth_token: 'fa9da83004160633e9e98d6714e5be8581894b31',
+    auth_token: import.meta.env.VITE_MJJ_AUTH_TOKEN || '',
     expiration: '',
     nsfw: 0,
   }),

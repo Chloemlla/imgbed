@@ -1,17 +1,25 @@
-export function copyToClip(content: string | undefined) {
-  if (!content) {
-    return
-  }
+export async function copyToClip(content: string | undefined) {
+  if (!content) return
+
   if (navigator.clipboard) {
-    navigator.clipboard.writeText(content)
-    return
+    try {
+      await navigator.clipboard.writeText(content)
+      return
+    } catch {
+      // Fall through to legacy method
+    }
   }
-  const aux = document.createElement('textarea')
-  // aux.setAttribute("value", content);
-  aux.value = content
-  document.body.appendChild(aux)
-  aux.select()
-  document.execCommand('copy')
-  document.body.removeChild(aux)
-  console.log('复制成功')
+
+  // Legacy fallback for older browsers
+  const textarea = document.createElement('textarea')
+  textarea.value = content
+  textarea.style.position = 'fixed'
+  textarea.style.opacity = '0'
+  document.body.appendChild(textarea)
+  textarea.select()
+  try {
+    document.execCommand('copy')
+  } finally {
+    document.body.removeChild(textarea)
+  }
 }

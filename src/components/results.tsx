@@ -22,12 +22,23 @@ enum UrlShowType {
   MARKDOWNWITHLINK = 'Markdown with link',
 }
 
+// Escape HTML special characters to prevent XSS in generated embed codes
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+
 const getUrlShow = (f: TFile, type: UrlShowType) => {
+  const safeName = escapeHtml(f.file.name)
   switch (type) {
     case UrlShowType.URL:
       return f.url
     case UrlShowType.HTML:
-      return `<img src="${f.url}" alt="${f.file.name}" title="${f.file.name}" referrerPolicy="no-referrer" />`
+      return `<img src="${escapeHtml(f.url)}" alt="${safeName}" title="${safeName}" referrerPolicy="no-referrer" />`
     case UrlShowType.BBCODE:
       return `[img]${f.url}[/img]`
     case UrlShowType.MARKDOWN:

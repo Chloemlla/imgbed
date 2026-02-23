@@ -1,137 +1,169 @@
 /**
- * Welcome to Cloudflare Workers! This is your first worker.
- *
- * - Run "npm run dev" in your terminal to start a development server
- * - Open a browser tab at http://localhost:8787/ to see your worker in action
- * - Run "npm run deploy" to publish your worker
- *
- * Learn more at https://developers.cloudflare.com/workers/
+ * Cloudflare Worker - CORS proxy for image upload APIs
+ * 
+ * Security fixes:
+ * - Strict origin allowlist enforcement
+ * - URL allowlist to prevent SSRF/open proxy abuse
+ * - Proper CORS headers (no wildcard)
+ * - URL validation to block internal network access
  */
 
-// We support the GET, POST, HEAD, and OPTIONS methods from any origin,
-// and allow any header on requests. These headers must be present
-// on all responses to all CORS preflight requests. In practice, this means
-// all responses to OPTIONS requests.
-const allowUrls = ['https://img.nn.ci', 'http://localhost:5173']
+const allowedOrigins = ['https://img.nn.ci']
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET,HEAD,POST,OPTIONS',
-  'Access-Control-Max-Age': '86400',
+// Allowlist of API domains this proxy is permitted to forward to
+const allowedApiDomains = [
+  'im.ge',
+  'mjj.today',
+  'zh-cn.imgbb.com',
+  'www.freebuf.com',
+  'pic.sl.al',
+  'changyan.sohu.com',
+  'tucdn.wpon.cn',
+  'upload.cc',
+  'tgimg.hapxs.com',
+  'telegra.ph',
+]
+
+function isAllowedOrigin(origin) {
+  return allowedOrigins.includes(origin)
+}
+
+function isAllowedApiUrl(urlString) {
+  try {
+    const url = new URL(urlString)
+    // Block non-HTTP(S) schemes
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      return false
+    }
+    // Block internal/private IPs
+    const hostname = url.hostname
+    if (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname === '0.0.0.0' ||
+      hostname.startsWith('10.') ||
+      hostname.startsWith('192.168.') ||
+      hostname.startsWith('172.') ||
+      hostname === '169.254.169.254' ||
+      hostname.endsWith('.local') ||
+      hostname.endsWith('.internal')
+    ) {
+      return false
+    }
+    // Check against domain allowlist
+    return allowedApiDomains.some(
+      (domain) => hostname === domain || hostname.endsWith('.' + domain),
+    )
+  } catch {
+    return false
+  }
+}
+
+function makeCorsHeaders(origin) {
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': 'GET,HEAD,POST,OPTIONS',
+    'Access-Control-Max-Age': '86400',
+  }
 }
 
 async function handleRequest(request) {
-  const origin = request.headers.get('origin')
+  const origin = request.headers.get('origin') || ''
   const url = new URL(request.url)
-  if (!allowUrls.includes(origin)) {
-    const resp = new Response(
-      JSON.stringify({
-        code: 401,
-        message: `${origin} not allowed`,
-      }),
+
+  if (!isAllowedOrigin(origin)) {
+    return new Response(
+      JSON.stringify({ code: 403, message: 'Origin not allowed' }),
       {
+        status: 403,
         headers: {
           'content-type': 'application/json;charset=UTF-8',
         },
       },
     )
-    resp.headers.set('Access-Control-Allow-Origin', origin)
-    return resp
   }
 
   let apiUrl = request.url.substr(8)
   apiUrl = decodeURIComponent(apiUrl.substr(apiUrl.indexOf('/') + 1))
+
   if (!apiUrl) {
-    const resp = new Response(
-      JSON.stringify({
-        code: 400,
-        message: `usage: ${url.origin}/API-URL`,
-      }),
+    return new Response(
+      JSON.stringify({ code: 400, message: `usage: ${url.origin}/API-URL` }),
       {
+        status: 400,
         headers: {
           'content-type': 'application/json;charset=UTF-8',
+          ...makeCorsHeaders(origin),
         },
       },
     )
-    resp.headers.set('Access-Control-Allow-Origin', origin)
-    return resp
   }
-  if (apiUrl.indexOf('://') == -1) {
-    apiUrl = 'http://' + apiUrl
+
+  if (apiUrl.indexOf('://') === -1) {
+    apiUrl = 'https://' + apiUrl
   }
-  // Rewrite request to point to API url. This also makes the request mutable
-  // so we can add the correct Origin header to make the API server think
-  // that this request isn't cross-site.
+
+  // Validate the target URL against allowlist
+  if (!isAllowedApiUrl(apiUrl)) {
+    return new Response(
+      JSON.stringify({ code: 403, message: 'Target API domain not allowed' }),
+      {
+        status: 403,
+        headers: {
+          'content-type': 'application/json;charset=UTF-8',
+          ...makeCorsHeaders(origin),
+        },
+      },
+    )
+  }
+
   request = new Request(apiUrl, request)
   request.headers.set('Origin', new URL(apiUrl).origin)
   request.headers.set('Referer', new URL(apiUrl).origin)
   let response = await fetch(request)
 
-  // Recreate the response so we can modify the headers
   response = new Response(response.body, response)
-
-  // Set CORS headers
   response.headers.set('Access-Control-Allow-Origin', origin)
-
-  // Append to/Add Vary header so browser will cache response correctly
   response.headers.append('Vary', 'Origin')
 
   return response
 }
 
 function handleOptions(request) {
-  // Make sure the necessary headers are present
-  // for this to be a valid pre-flight request
-  let headers = request.headers
+  const origin = request.headers.get('origin') || ''
+  const headers = request.headers
+
+  if (!isAllowedOrigin(origin)) {
+    return new Response(null, { status: 403 })
+  }
+
   if (
     headers.get('Origin') !== null &&
     headers.get('Access-Control-Request-Method') !== null
   ) {
-    // Handle CORS pre-flight request.
-    // If you want to check or reject the requested method + headers
-    // you can do that here.
-    let respHeaders = {
-      ...corsHeaders,
-      // Allow all future content Request headers to go back to browser
-      // such as Authorization (Bearer) or X-Client-Name-Version
-      'Access-Control-Allow-Headers': request.headers.get(
-        'Access-Control-Request-Headers',
-      ),
-    }
-
-    return new Response(null, {
-      headers: respHeaders,
-    })
-  } else {
-    // Handle standard OPTIONS request.
-    // If you want to allow other HTTP Methods, you can do that here.
     return new Response(null, {
       headers: {
-        Allow: 'GET, HEAD, POST, OPTIONS',
+        ...makeCorsHeaders(origin),
+        'Access-Control-Allow-Headers':
+          request.headers.get('Access-Control-Request-Headers') || '',
       },
+    })
+  } else {
+    return new Response(null, {
+      headers: { Allow: 'GET, HEAD, POST, OPTIONS' },
     })
   }
 }
 
 addEventListener('fetch', (event) => {
   const request = event.request
-  // const url = new URL(request.url)
   if (request.method === 'OPTIONS') {
-    // Handle CORS preflight requests
     event.respondWith(handleOptions(request))
-  } else if (
-    request.method === 'GET' ||
-    request.method === 'HEAD' ||
-    request.method === 'POST'
-  ) {
-    // Handle requests to the API server
+  } else if (['GET', 'HEAD', 'POST'].includes(request.method)) {
     event.respondWith(handleRequest(request))
   } else {
     event.respondWith(
-      new Response(null, {
-        status: 405,
-        statusText: 'Method Not Allowed',
-      }),
+      new Response(null, { status: 405, statusText: 'Method Not Allowed' }),
     )
   }
 })

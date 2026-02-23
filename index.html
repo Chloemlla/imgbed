@@ -7,16 +7,16 @@
     href="https://img.hapxs.com/uploads/20250901/c95a6d268cfaa8dc44bd7ffd3cedc4c2.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- CSP 配置允许 cy-pic.kuaizhan.com 域名 -->
+  <!-- CSP 配置 -->
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval';
+    script-src 'self' 'unsafe-inline';
     style-src 'self' 'unsafe-inline';
-    img-src 'self' data: blob: https: http: https://cy-pic.kuaizhan.com https://*.kuaizhan.com https://img.hapxs.com;
-    connect-src 'self' https: http: ws: wss: https://cy-pic.kuaizhan.com https://*.kuaizhan.com https://img.xcool.workers.dev https://upload.cc https://tgimg.hapxs.com https://api.allorigins.win ;
+    img-src 'self' data: blob: https:;
+    connect-src 'self' https://img.xcool.workers.dev https://zh-cn.imgbb.com https://changyan.sohu.com https://im.ge https://mjj.today https://tgimg.hapxs.com https://upload.cc https://api.allorigins.win;
     font-src 'self' data:;
     object-src 'none';
-    media-src 'self' https://cy-pic.kuaizhan.com https://*.kuaizhan.com https://img.hapxs.com;
+    media-src 'self';
     frame-src 'none';
     base-uri 'self';
     form-action 'self';

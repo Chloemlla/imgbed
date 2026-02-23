@@ -1,17 +1,9 @@
 import { Api } from '@/types'
 
 const getApiUrl = () => {
-  // Use proxy in development, direct URL in production
-  console.log('Environment DEV:', import.meta.env.DEV)
-  console.log('Environment MODE:', import.meta.env.MODE)
-  
   if (import.meta.env.DEV) {
-    console.log('Using proxy URL: /api/tgimg/upload')
     return '/api/tgimg/upload'
   }
-  
-  console.log('Using direct URL: https://tgimg.hapxs.com/upload')
-  // For production, use a CORS proxy as fallback
   return 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://tgimg.hapxs.com/upload')
 }
 
