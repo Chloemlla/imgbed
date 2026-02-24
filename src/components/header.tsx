@@ -103,7 +103,7 @@ export function Header() {
 
                   <div>
                     <p className="font-semibold mb-2 text-base sm:text-lg"><FaFileContract className="inline mr-1 align-[-2px]" /> 开源协议</p>
-                    <p className="text-xs sm:text-sm text-gray-600 mb-2">
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2">
                       本项目不同于原开源项目，因为原开源项目没有开源协议。
                     </p>
                     <p className="text-xs sm:text-sm">
@@ -123,9 +123,9 @@ export function Header() {
 
                   <div>
                     <p className="font-semibold mb-2 text-base sm:text-lg"><FaCogs className="inline mr-1 align-[-2px]" /> 项目改进</p>
-                    <div className="text-xs sm:text-sm text-gray-600 space-y-3">
+                    <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 space-y-3">
                       <div>
-                        <p className="font-medium text-gray-800 text-sm sm:text-base"><FaBug className="inline mr-1 align-[-2px]" /> 功能修复：</p>
+                        <p className="font-medium text-gray-800 dark:text-gray-200 text-sm sm:text-base"><FaBug className="inline mr-1 align-[-2px]" /> 功能修复：</p>
                         <ul className="list-disc list-inside space-y-1 ml-2 mt-1">
                           <li>修复了 useEffect 缺少依赖数组导致的内存泄漏</li>
                           <li>修复了重复选择同一API仍显示通知的问题</li>
@@ -135,7 +135,7 @@ export function Header() {
                       </div>
 
                       <div>
-                        <p className="font-medium text-gray-800 text-sm sm:text-base"><FaRocket className="inline mr-1 align-[-2px]" /> 功能优化：</p>
+                        <p className="font-medium text-gray-800 dark:text-gray-200 text-sm sm:text-base"><FaRocket className="inline mr-1 align-[-2px]" /> 功能优化：</p>
                         <ul className="list-disc list-inside space-y-1 ml-2 mt-1">
                           <li>统一通知系统，替换 react-hot-toast 为自定义组件</li>
                           <li>添加文件选择器图片类型限制</li>
@@ -145,7 +145,7 @@ export function Header() {
                       </div>
 
                       <div>
-                        <p className="font-medium text-gray-800 text-sm sm:text-base"><FaSmile className="inline mr-1 align-[-2px]" /> 用户体验改进：</p>
+                        <p className="font-medium text-gray-800 dark:text-gray-200 text-sm sm:text-base"><FaSmile className="inline mr-1 align-[-2px]" /> 用户体验改进：</p>
                         <ul className="list-disc list-inside space-y-1 ml-2 mt-1">
                           <li>添加 ImgBB 和 Telegraph 服务连通性提示</li>
                           <li>改进进度条可访问性（aria-label）</li>
@@ -171,7 +171,7 @@ export function Header() {
                         </p>
                       </div>
 
-                      <p className="text-xs text-gray-500 pt-2 border-t border-gray-200">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-200 dark:border-gray-600">
                         以上为本作者的贡献，这些改进让应用更加稳定和易用。
                       </p>
                     </div>
