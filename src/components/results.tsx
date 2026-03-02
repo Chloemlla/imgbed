@@ -32,6 +32,16 @@ function escapeHtml(str: string): string {
     .replace(/'/g, '&#039;')
 }
 
+// Escape Markdown special characters in text (alt text, filenames)
+function escapeMdText(str: string): string {
+  return str.replace(/[[\]()!\\]/g, '\\$&')
+}
+
+// Escape parentheses in URLs for Markdown link syntax
+function escapeMdUrl(str: string): string {
+  return str.replace(/[()]/g, (c) => '%' + c.charCodeAt(0).toString(16))
+}
+
 const getUrlShow = (f: TFile, type: UrlShowType) => {
   const safeName = escapeHtml(f.file.name)
   switch (type) {
@@ -42,9 +52,9 @@ const getUrlShow = (f: TFile, type: UrlShowType) => {
     case UrlShowType.BBCODE:
       return `[img]${f.url}[/img]`
     case UrlShowType.MARKDOWN:
-      return `![${f.file.name}](${f.url})`
+      return `![${escapeMdText(f.file.name)}](${escapeMdUrl(f.url)})`
     case UrlShowType.MARKDOWNWITHLINK:
-      return `[![${f.file.name}](${f.url})](${f.url})`
+      return `[![${escapeMdText(f.file.name)}](${escapeMdUrl(f.url)})](${escapeMdUrl(f.url)})`
   }
 }
 function Result(props: { f: TFile; type: UrlShowType }) {

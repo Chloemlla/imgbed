@@ -7,6 +7,9 @@ export function createAsyncPool(max: number) {
       queue.shift()!().then(() => {
         active--
         next()
+      }).catch(() => {
+        active--
+        next()
       })
     }
   }

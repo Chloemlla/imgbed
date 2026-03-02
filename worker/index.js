@@ -43,10 +43,14 @@ function isAllowedApiUrl(urlString) {
       hostname === '0.0.0.0' ||
       hostname.startsWith('10.') ||
       hostname.startsWith('192.168.') ||
-      hostname.startsWith('172.') ||
+      /^172\.(1[6-9]|2\d|3[01])\./.test(hostname) ||
       hostname === '169.254.169.254' ||
       hostname.endsWith('.local') ||
-      hostname.endsWith('.internal')
+      hostname.endsWith('.internal') ||
+      // IPv6 private/loopback addresses
+      hostname === '::1' || hostname === '[::1]' ||
+      hostname.startsWith('fc') || hostname.startsWith('fd') ||
+      hostname.startsWith('fe80')
     ) {
       return false
     }
@@ -83,8 +87,8 @@ async function handleRequest(request) {
     )
   }
 
-  let apiUrl = request.url.substr(8)
-  apiUrl = decodeURIComponent(apiUrl.substr(apiUrl.indexOf('/') + 1))
+  let apiUrl = url.pathname.substring(1)
+  if (url.search) apiUrl += url.search
 
   if (!apiUrl) {
     return new Response(
@@ -99,8 +103,24 @@ async function handleRequest(request) {
     )
   }
 
-  if (apiUrl.indexOf('://') === -1) {
+  if (!apiUrl.startsWith('http://') && !apiUrl.startsWith('https://')) {
     apiUrl = 'https://' + apiUrl
+  }
+
+  // Validate that the constructed URL is well-formed
+  try {
+    new URL(apiUrl)
+  } catch {
+    return new Response(
+      JSON.stringify({ code: 400, message: 'Invalid API URL' }),
+      {
+        status: 400,
+        headers: {
+          'content-type': 'application/json;charset=UTF-8',
+          ...makeCorsHeaders(origin),
+        },
+      },
+    )
   }
 
   // Validate the target URL against allowlist

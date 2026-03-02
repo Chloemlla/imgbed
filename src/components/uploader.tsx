@@ -1,7 +1,7 @@
 import { TFile, useFileStore } from '@/store/file'
 import { useApiStore } from '@/store/api'
 import { Card, CardBody, Progress } from '@nextui-org/react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { useNotification } from './Notification'
 import clsx from 'clsx'
 
@@ -50,7 +50,7 @@ export function Uploader() {
   const [current] = useApiStore((state) => [state.current])
   const { setNotification } = useNotification()
 
-  function handleAddFiles(files: FileList | File[]) {
+  const handleAddFiles = useCallback((files: FileList | File[]) => {
     // 检查当前选择的API是否为不可用的服务
     if (current === 'Telegraph' || current === 'Upload.cc') {
       setNotification({
@@ -65,17 +65,18 @@ export function Uploader() {
         useFileStore.getState().add(file)
       }
     }
-  }
-  function pasteListener(e: ClipboardEvent) {
-    const files = e.clipboardData?.files
-    files && handleAddFiles(files)
-  }
+  }, [current, setNotification])
+
   useEffect(() => {
-    document.addEventListener('paste', pasteListener)
-    return () => {
-      document.removeEventListener('paste', pasteListener)
+    const handler = (e: ClipboardEvent) => {
+      const files = e.clipboardData?.files
+      files && handleAddFiles(files)
     }
-  }, [])
+    document.addEventListener('paste', handler)
+    return () => {
+      document.removeEventListener('paste', handler)
+    }
+  }, [handleAddFiles])
   return (
     <Card
       className={clsx({

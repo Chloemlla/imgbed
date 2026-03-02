@@ -49,6 +49,12 @@ Dockerfile*
 README.md
 *.md
 
+# Cloudflare config (may contain secrets)
+wrangler.toml
+
+# Build scripts not needed in container
+scripts/
+
 # Logs
 logs
 *.log
